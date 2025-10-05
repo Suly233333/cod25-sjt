@@ -78,6 +78,11 @@ module controller (
         ST_INIT: begin
           // 默认关闭寄存器写使能
           rf_we <= 1'b0;
+          // 初始化可能影响下一个操作的信号
+          alu_op <= 4'b0;
+          rf_raddr_a <= 5'b0;
+          rf_raddr_b <= 5'b0;
+          rf_waddr <= 5'b0;
           
           if (step) begin
             inst_reg <= dip_sw;
@@ -130,6 +135,8 @@ module controller (
         end
 
         default: begin
+          // 处理非法状态
+          rf_we <= 1'b0;  // 确保寄存器不被意外写入
           state <= ST_INIT;
         end
       endcase
