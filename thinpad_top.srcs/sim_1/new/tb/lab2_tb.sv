@@ -42,12 +42,26 @@ module lab2_tb;
   logic [4:0] rd, rs1, rs2;
   logic [3:0] opcode;
 
+  // 用于验证结果的变量
+  logic [15:0] expected_result;
+  logic [15:0] reg_values[31:0];
+  
+  // 用于生成随机指令的变量
+  opcode_t random_op;
+  logic [4:0] random_rd, random_rs1, random_rs2;
+  logic [15:0] random_imm;
+
   initial begin
     // 在这里可以自定义测试输入序列，例如：
     dip_sw = 32'h0;
     touch_btn = 0;
     reset_btn = 0;
     push_btn = 0;
+
+    // 初始化寄存器值跟踪数组
+    for (int i = 0; i < 32; i = i + 1) begin
+      reg_values[i] = 0;
+    end
 
     #100;
     reset_btn = 1;
@@ -59,8 +73,12 @@ module lab2_tb;
     for (int i = 1; i < 32; i = i + 1) begin
       #100;
       rd = i;   // only lower 5 bits
-      dip_sw = `inst_poke(rd, $urandom_range(0, 65536));
+      random_imm = $urandom_range(0, 65535);
+      dip_sw = `inst_poke(rd, random_imm);
       push_btn = 1;
+      
+      // 更新我们跟踪的寄存器值
+      reg_values[rd] = random_imm;
 
       #100;
       push_btn = 0;
@@ -68,7 +86,89 @@ module lab2_tb;
       #1000;
     end
 
-    // TODO: 随机测试各种指令
+    // 随机测试各种指令
+    for (int test = 0; test < 100; test = test + 1) begin
+      #100;
+      
+      // 随机决定使用R型指令还是I型指令
+      if ($urandom_range(0, 1) == 0) begin
+        // 测试R型指令
+        random_op = opcode_t'($urandom_range(1, 10)); // 随机选择一个操作码
+        random_rd = $urandom_range(1, 31); // 目标寄存器，避免使用r0
+        random_rs1 = $urandom_range(1, 31); // 源寄存器1
+        random_rs2 = $urandom_range(1, 31); // 源寄存器2
+        
+        // 构造指令
+        dip_sw = `inst_rtype(random_rd, random_rs1, random_rs2, random_op);
+        
+        // 计算预期结果
+        case (random_op)
+          ADD: expected_result = reg_values[random_rs1] + reg_values[random_rs2];
+          SUB: expected_result = reg_values[random_rs1] - reg_values[random_rs2];
+          AND: expected_result = reg_values[random_rs1] & reg_values[random_rs2];
+          OR:  expected_result = reg_values[random_rs1] | reg_values[random_rs2];
+          XOR: expected_result = reg_values[random_rs1] ^ reg_values[random_rs2];
+          NOT: expected_result = ~reg_values[random_rs1];
+          SLL: expected_result = reg_values[random_rs1] << reg_values[random_rs2][3:0];
+          SRL: expected_result = reg_values[random_rs1] >> reg_values[random_rs2][3:0];
+          SRA: begin
+            logic signed [15:0] signed_a = reg_values[random_rs1];
+            expected_result = signed_a >>> reg_values[random_rs2][3:0];
+          end
+          ROL: expected_result = (reg_values[random_rs1] << reg_values[random_rs2][3:0]) | 
+                                (reg_values[random_rs1] >> (16 - reg_values[random_rs2][3:0]));
+          default: expected_result = 16'b0;
+        endcase
+        
+        // 更新我们跟踪的寄存器值
+        reg_values[random_rd] = expected_result;
+        
+        // 打印测试信息
+        $display("Test %0d: R-type op=%0d, rd=%0d, rs1=%0d, rs2=%0d, expected=%0h", 
+                 test, random_op, random_rd, random_rs1, random_rs2, expected_result);
+      end else begin
+        // 测试POKE指令
+        random_rd = $urandom_range(1, 31); // 目标寄存器，避免使用r0
+        random_imm = $urandom_range(0, 65535); // 随机立即数
+        
+        // 构造POKE指令
+        dip_sw = `inst_poke(random_rd, random_imm);
+        
+        // 更新我们跟踪的寄存器值
+        reg_values[random_rd] = random_imm;
+        
+        // 打印测试信息
+        $display("Test %0d: POKE rd=%0d, imm=%0h", test, random_rd, random_imm);
+      end
+      
+      // 执行指令
+      push_btn = 1;
+      #100;
+      push_btn = 0;
+      #1000;
+      
+      // 每隔10条指令，使用PEEK指令验证一个随机寄存器的值
+      if (test % 10 == 9) begin
+        random_rd = $urandom_range(1, 31); // 随机选择一个寄存器验证
+        
+        // 构造PEEK指令
+        dip_sw = `inst_peek(random_rd, 16'h0); // 立即数在PEEK指令中不使用
+        
+        // 执行PEEK指令
+        push_btn = 1;
+        #100;
+        push_btn = 0;
+        #1000;
+        
+        // 验证LED显示的值是否与我们跟踪的寄存器值一致
+        if (leds !== reg_values[random_rd]) begin
+          $display("ERROR: PEEK rd=%0d, expected=%0h, actual=%0h", 
+                   random_rd, reg_values[random_rd], leds);
+        end else begin
+          $display("PASS: PEEK rd=%0d, value=%0h", random_rd, leds);
+        end
+      end
+    end
 
     #10000 $finish;
   end

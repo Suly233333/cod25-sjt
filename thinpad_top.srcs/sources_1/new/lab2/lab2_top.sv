@@ -105,9 +105,73 @@ module lab2_top (
 
   /* =========== Demo code end =========== */
 
-  // TODO: 内部信号声明
-
-  // TODO: 实验模块例化
-
+  // 内部信号声明
+  // 按键检测信号
+  logic step;
+  
+  // 寄存器堆信号
+  logic [4:0] rf_raddr_a;
+  logic [15:0] rf_rdata_a;
+  logic [4:0] rf_raddr_b;
+  logic [15:0] rf_rdata_b;
+  logic [4:0] rf_waddr;
+  logic [15:0] rf_wdata;
+  logic rf_we;
+  
+  // ALU信号
+  logic [15:0] alu_a;
+  logic [15:0] alu_b;
+  logic [3:0] alu_op;
+  logic [15:0] alu_y;
+  
+  // 实验模块例化
+  // 按键检测模块 - 检测push_btn的上升沿
+  button_in u_button_in (
+    .clk(clk_10M),
+    .reset(reset_of_clk10M),
+    .push_btn(push_btn),
+    .step(step)
+  );
+  
+  // 寄存器堆模块
+  register_file u_register_file (
+    .clk(clk_10M),
+    .reset(reset_of_clk10M),
+    .waddr(rf_waddr),
+    .wdata(rf_wdata),
+    .we(rf_we),
+    .raddr_a(rf_raddr_a),
+    .rdata_a(rf_rdata_a),
+    .raddr_b(rf_raddr_b),
+    .rdata_b(rf_rdata_b)
+  );
+  
+  // ALU模块
+  alu u_alu (
+    .a(alu_a),
+    .b(alu_b),
+    .op(alu_op),
+    .y(alu_y)
+  );
+  
+  // 控制器模块
+  controller u_controller (
+    .clk(clk_10M),
+    .reset(reset_of_clk10M),
+    .rf_raddr_a(rf_raddr_a),
+    .rf_rdata_a(rf_rdata_a),
+    .rf_raddr_b(rf_raddr_b),
+    .rf_rdata_b(rf_rdata_b),
+    .rf_waddr(rf_waddr),
+    .rf_wdata(rf_wdata),
+    .rf_we(rf_we),
+    .alu_a(alu_a),
+    .alu_b(alu_b),
+    .alu_op(alu_op),
+    .alu_y(alu_y),
+    .step(step),
+    .dip_sw(dip_sw),
+    .leds(leds)
+  );
 
 endmodule
