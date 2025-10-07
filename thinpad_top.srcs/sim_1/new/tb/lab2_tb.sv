@@ -52,13 +52,12 @@ module lab2_tb;
   logic [15:0] random_imm;
 
   initial begin
-    // 在这里可以自定义测试输入序列，例如：
+
     dip_sw = 32'h0;
     touch_btn = 0;
     reset_btn = 0;
     push_btn = 0;
 
-    // 初始化寄存器值跟踪数组
     for (int i = 0; i < 32; i = i + 1) begin
       reg_values[i] = 0;
     end
@@ -67,105 +66,125 @@ module lab2_tb;
     reset_btn = 1;
     #100;
     reset_btn = 0;
-    #1000;  // 等待复位结束
+    #2000;
 
+    $display("initializing registers");
     // 样例：使用 POKE 指令为寄存器赋随机初值
-    for (int i = 1; i < 32; i = i + 1) begin
+    for (int i = 0; i < 32; i = i + 1) begin
       #100;
       rd = i;   // only lower 5 bits
       random_imm = $urandom_range(0, 65535);
       dip_sw = `inst_poke(rd, random_imm);
+
       push_btn = 1;
       
-      // 更新我们跟踪的寄存器值
-      reg_values[rd] = random_imm;
+      if (i == 0) begin
+        reg_values[rd] = 16'h0000;
+        $display("writing x%0d = 0x%04h", rd, random_imm);
+      end else begin
+        reg_values[rd] = random_imm;
+        $display("writing x%0d = 0x%04h", rd, random_imm);
+      end
 
       #100;
       push_btn = 0;
-
       #1000;
+    end
+    
+    $display("\nchecking all registers");
+    for (int i = 0; i < 32; i = i + 1) begin
+      rd = i; 
+        
+      // 构造PEEK指令
+      dip_sw = `inst_peek(rd, 16'h0);
+        
+      // 执行PEEK指令
+      push_btn = 1;
+      #100;
+      push_btn = 0;
+      #1000;
+      
+      if (i == 0) begin
+        $display("checking x%0d, expected 0x%04h, actual 0x%04h", 
+                 rd, 16'h0000, leds);
+        if (leds !== 16'h0000) begin
+          $display("ERROR: x0 should be 0!");
+        end
+      end else begin
+        $display("checking x%0d, expected 0x%04h, actual 0x%04h", 
+                 rd, reg_values[rd], leds);
+        if (leds !== reg_values[rd]) begin
+          $display("ERROR: Register value mismatch!");
+        end
+      end
     end
 
     // 随机测试各种指令
     for (int test = 0; test < 100; test = test + 1) begin
       #100;
       
-      // 随机决定使用R型指令还是I型指令
-      if ($urandom_range(0, 1) == 0) begin
-        // 测试R型指令
-        random_op = opcode_t'($urandom_range(1, 10)); // 随机选择一个操作码
-        random_rd = $urandom_range(1, 31); // 目标寄存器，避免使用r0
-        random_rs1 = $urandom_range(1, 31); // 源寄存器1
-        random_rs2 = $urandom_range(1, 31); // 源寄存器2
-        
-        // 构造指令
-        dip_sw = `inst_rtype(random_rd, random_rs1, random_rs2, random_op);
-        
-        // 计算预期结果
-        case (random_op)
-          ADD: expected_result = reg_values[random_rs1] + reg_values[random_rs2];
-          SUB: expected_result = reg_values[random_rs1] - reg_values[random_rs2];
-          AND: expected_result = reg_values[random_rs1] & reg_values[random_rs2];
-          OR:  expected_result = reg_values[random_rs1] | reg_values[random_rs2];
-          XOR: expected_result = reg_values[random_rs1] ^ reg_values[random_rs2];
-          NOT: expected_result = ~reg_values[random_rs1];
-          SLL: expected_result = reg_values[random_rs1] << reg_values[random_rs2][3:0];
-          SRL: expected_result = reg_values[random_rs1] >> reg_values[random_rs2][3:0];
-          SRA: begin
-            logic signed [15:0] signed_a = reg_values[random_rs1];
-            expected_result = signed_a >>> reg_values[random_rs2][3:0];
-          end
-          ROL: expected_result = (reg_values[random_rs1] << reg_values[random_rs2][3:0]) | 
-                                (reg_values[random_rs1] >> (16 - reg_values[random_rs2][3:0]));
-          default: expected_result = 16'b0;
-        endcase
-        
-        // 更新我们跟踪的寄存器值
-        reg_values[random_rd] = expected_result;
-        
-        // 打印测试信息
-        $display("Test %0d: R-type op=%0d, rd=%0d, rs1=%0d, rs2=%0d, expected=%0h", 
-                 test, random_op, random_rd, random_rs1, random_rs2, expected_result);
-      end else begin
-        // 测试POKE指令
-        random_rd = $urandom_range(1, 31); // 目标寄存器，避免使用r0
-        random_imm = $urandom_range(0, 65535); // 随机立即数
-        
-        // 构造POKE指令
-        dip_sw = `inst_poke(random_rd, random_imm);
-        
-        // 更新我们跟踪的寄存器值
-        reg_values[random_rd] = random_imm;
-        
-        // 打印测试信息
-        $display("Test %0d: POKE rd=%0d, imm=%0h", test, random_rd, random_imm);
-      end
+      random_op = opcode_t'($urandom_range(1, 10));
+      random_rd = $urandom_range(0, 31);
+      random_rs1 = $urandom_range(0, 31);
+      random_rs2 = $urandom_range(0, 31);
       
-      // 执行指令
+      dip_sw = `inst_rtype(random_rd, random_rs1, random_rs2, random_op);
+      
+      $display("\nrunning x%0d = x%0d %s x%0d, inst 0x%08h", 
+               random_rd, random_rs1, random_op.name(), random_rs2, dip_sw);
+      
+      $display("checking x%0d, expected 0x%04h, actual 0x%04h", 
+               random_rs1, reg_values[random_rs1], reg_values[random_rs1]);
+      
+      $display("checking x%0d, expected 0x%04h, actual 0x%04h", 
+               random_rs2, reg_values[random_rs2], reg_values[random_rs2]);
+      
+      case (random_op)
+        ADD: expected_result = reg_values[random_rs1] + reg_values[random_rs2];
+        SUB: expected_result = reg_values[random_rs1] - reg_values[random_rs2];
+        AND: expected_result = reg_values[random_rs1] & reg_values[random_rs2];
+        OR:  expected_result = reg_values[random_rs1] | reg_values[random_rs2];
+        XOR: expected_result = reg_values[random_rs1] ^ reg_values[random_rs2];
+        NOT: expected_result = ~reg_values[random_rs1];
+        SLL: expected_result = reg_values[random_rs1] << reg_values[random_rs2][3:0];
+        SRL: expected_result = reg_values[random_rs1] >> reg_values[random_rs2][3:0];
+        SRA: begin
+          logic signed [15:0] signed_a = reg_values[random_rs1];
+          expected_result = signed_a >>> reg_values[random_rs2][3:0];
+        end
+        ROL: expected_result = (reg_values[random_rs1] << reg_values[random_rs2][3:0]) | 
+                              (reg_values[random_rs1] >> (16 - reg_values[random_rs2][3:0]));
+        default: expected_result = 16'b0;
+      endcase
+      
       push_btn = 1;
       #100;
       push_btn = 0;
       #1000;
       
-      // 每隔10条指令，使用PEEK指令验证一个随机寄存器的值
-      if (test % 10 == 9) begin
-        random_rd = $urandom_range(1, 31); // 随机选择一个寄存器验证
-        
-        // 构造PEEK指令
-        dip_sw = `inst_peek(random_rd, 16'h0); // 立即数在PEEK指令中不使用
-        
-        // 执行PEEK指令
-        push_btn = 1;
-        #100;
-        push_btn = 0;
-        #1000;
-        
-        // 验证LED显示的值是否与我们跟踪的寄存器值一致
-        if (leds !== reg_values[random_rd]) begin
-          $display("ERROR: PEEK rd=%0d, expected=%0h, actual=%0h", 
-                   random_rd, reg_values[random_rd], leds);
-        end else begin
-          $display("PASS: PEEK rd=%0d, value=%0h", random_rd, leds);
+      if (random_rd == 0) begin
+        reg_values[random_rd] = 16'h0000;
+      end else begin
+        reg_values[random_rd] = expected_result;
+      end
+      
+      dip_sw = `inst_peek(random_rd, 16'h0);
+      push_btn = 1;
+      #100;
+      push_btn = 0;
+      #1000;
+      
+      if (random_rd == 0) begin
+        $display("checking x%0d, expected 0x%04h, actual 0x%04h", 
+                 random_rd, 16'h0000, leds);
+        if (leds !== 16'h0000) begin
+          $display("ERROR: x0 should be 0!");
+        end
+      end else begin
+        $display("checking x%0d, expected 0x%04h, actual 0x%04h", 
+                 random_rd, expected_result, leds);
+        if (leds !== expected_result) begin
+          $display("ERROR: ALU result mismatch!");
         end
       end
     end
