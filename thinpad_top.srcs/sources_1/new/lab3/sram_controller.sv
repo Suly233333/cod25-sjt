@@ -40,11 +40,11 @@ module sram_controller #(
   reg wb_ack_o_reg;
   reg [DATA_WIDTH-1:0] wb_dat_o_reg;
 
-  wire [31:0] sram_data_i_comb;
-  reg [31:0] sram_data_o_reg;
+  wire [SRAM_DATA_WIDTH-1:0] sram_data_i_comb;
+  reg [SRAM_DATA_WIDTH-1:0] sram_data_o_reg;
   reg sram_data_t_reg;
 
-  assign sram_data = sram_data_t_reg ? 32'bz : sram_data_o_reg;
+  assign sram_data = sram_data_t_reg ? {SRAM_DATA_WIDTH{1'bz}} : sram_data_o_reg;
   assign sram_data_i_comb = sram_data;
 
   initial begin
@@ -68,9 +68,9 @@ module sram_controller #(
   always_ff @ (posedge clk_i) begin
     if (rst_i) begin
       sram_data_t_reg <= 1'b1;
-      sram_data_o_reg <= 32'b0;
+      sram_data_o_reg <= {SRAM_DATA_WIDTH{1'b0}};
       wb_ack_o_reg <= 1'b0;
-      wb_dat_o_reg <= 32'b0;
+      wb_dat_o_reg <= {SRAM_DATA_WIDTH{1'b0}};
       ram_ce_n_reg <= 1'b1;
       ram_oe_n_reg <= 1'b1;
       ram_we_n_reg <= 1'b1;
