@@ -134,6 +134,8 @@ module lab4_top (
       .rst_i(sys_rst),
 
       // TODO: 添加需要的控制信号，例如按键开关？
+      // 添加拨码开关作为起始地址输入
+      .switch_i(dip_sw),
 
       // wishbone master
       .wb_cyc_o(wbm_cyc_o),
