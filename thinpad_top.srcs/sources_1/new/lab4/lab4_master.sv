@@ -133,7 +133,7 @@ module lab4_master #(
           // 发起读取串口数据寄存器的请求
           if (wb_ack_i) begin
             // 收到应答，保存数据
-            wb_dat_temp_reg <= wb_dat_i;
+            wb_dat_temp_reg <= wb_dat_i & 32'h0000_00FF;  // 只保留低8位数据
             wb_cyc_o_reg <= 0;
             wb_stb_o_reg <= 0;
             state <= STATE_READ_DATA_DONE;
