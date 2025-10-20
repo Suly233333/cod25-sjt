@@ -147,7 +147,7 @@ module lab4_master #(
           wb_stb_o_reg <= 1;
           wb_adr_o_reg <= base_addr + (data_counter << 2);  // 地址为base_addr + 4*i
           wb_we_o_reg <= 1;  // 写操作
-          wb_sel_o_reg <= 4'b0001;  // 只写入最低字节
+          wb_sel_o_reg <= 4'b0001;
           state <= STATE_WRITE_SRAM_ACTION;
         end
         
@@ -169,7 +169,7 @@ module lab4_master #(
           wb_stb_o_reg <= 1;
           wb_adr_o_reg <= UART_STATUS_ADDR;
           wb_we_o_reg <= 0;  // 读操作
-          wb_sel_o_reg <= 4'b0001;  // 只读取最低字节
+          wb_sel_o_reg <= 4'b0010;
           state <= STATE_WRITE_WAIT_ACTION;
         end
         
