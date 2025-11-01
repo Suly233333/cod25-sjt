@@ -1,17 +1,4 @@
-/**
- * @file lab5_top.sv
- * @brief 五级流水线 CPU 顶层模块
- *
- * 功能：
- * 1. PLL 时钟分频
- * 2. 集成五级流水线各阶段模块（IF, ID, EXE, MEM, WB）
- * 3. Stall/Flush 控制器
- * 4. 寄存器文件
- * 5. Wishbone 仲裁器和多路复用器
- * 6. SRAM 和 UART 控制器
- */
 `default_nettype none
-`include "mytype.sv"
 
 module lab5_top (
     input wire clk_50M,     // 50MHz 时钟输入
@@ -128,272 +115,89 @@ module lab5_top (
   assign uart_rdn = 1'b1;
   assign uart_wrn = 1'b1;
 
-  // ============================================================
-  // 流水线寄存器
-  // ============================================================
-  if_id_reg if_id_reg_r;
-  id_ex_reg id_ex_reg_r;
-  ex_mem_reg ex_mem_reg_r;
-  mem_wb_reg mem_wb_reg_r;
+  // ALU & RegFile
+  logic [4:0] rf_raddr_a_reg;
+  logic [4:0] rf_raddr_b_reg;
+  logic [4:0] rf_waddr_reg;
+  logic [31:0] rf_wdata_reg;
+  logic [31:0] rf_rdata_a_reg;
+  logic [31:0] rf_rdata_b_reg;
+  logic rf_we_reg;
+  logic [31:0] alu_a_reg;
+  logic [31:0] alu_b_reg;
+  logic [31:0] alu_y_reg;
+  logic [3:0] alu_op_reg;
 
-  // ============================================================
-  // Stall/Flush 信号
-  // ============================================================
-  stall_flush_in stall_flush_if_id_in;
-  stall_flush_in stall_flush_id_ex_in;
-  stall_flush_in stall_flush_ex_mem_in;
-  stall_flush_in stall_flush_mem_wb_in;
-
-  stall_flush_out stall_flush_if_out;
-  stall_flush_out stall_flush_id_out;
-  stall_flush_out stall_flush_exe_out;
-  stall_flush_out stall_flush_mem_out;
-
-  // ============================================================
-  // 分支跳转信号
-  // ============================================================
-  logic [31:0] pc_jump;
-  logic pc_jump_valid;
-
-  // ============================================================
-  // Wishbone 总线信号 - IF 和 MEM 到仲裁器
-  // ============================================================
-  // IF Master
-  logic [31:0] if_wb_adr;
-  logic [31:0] if_wb_dat_i;
-  logic [31:0] if_wb_dat_o;
-  logic if_wb_we;
-  logic [3:0] if_wb_sel;
-  logic if_wb_stb;
-  logic if_wb_ack;
-  logic if_wb_cyc;
-
-  // MEM Master
-  logic [31:0] mem_wb_adr;
-  logic [31:0] mem_wb_dat_i;
-  logic [31:0] mem_wb_dat_o;
-  logic mem_wb_we;
-  logic [3:0] mem_wb_sel;
-  logic mem_wb_stb;
-  logic mem_wb_ack;
-  logic mem_wb_cyc;
-
-  // 仲裁器输出（到 MUX）
-  logic [31:0] arb_wb_adr;
-  logic [31:0] arb_wb_dat_i;
-  logic [31:0] arb_wb_dat_o;
-  logic arb_wb_we;
-  logic [3:0] arb_wb_sel;
-  logic arb_wb_stb;
-  logic arb_wb_ack;
-  logic arb_wb_cyc;
-
-  // ============================================================
-  // 寄存器文件信号
-  // ============================================================
-  logic [4:0] rf_raddr_a;
-  logic [4:0] rf_raddr_b;
-  logic [31:0] rf_rdata_a;
-  logic [31:0] rf_rdata_b;
-
-  // ============================================================
-  // Stall/Flush 控制器
-  // ============================================================
-  stall_flush_controller stall_flush_ctrl (
-      .clk(sys_clk),
-      .rst(sys_rst),
-
-      .if_out_i(stall_flush_if_out),
-      .if_id_in_o(stall_flush_if_id_in),
-
-      .id_out_i(stall_flush_id_out),
-      .id_ex_in_o(stall_flush_id_ex_in),
-
-      .exe_out_i(stall_flush_exe_out),
-      .exe_mem_in_o(stall_flush_ex_mem_in),
-
-      .mem_out_i(stall_flush_mem_out),
-      .mem_wb_in_o(stall_flush_mem_wb_in)
+  lab5_alu # (
+    .DATA_WIDTH(32)
+  ) alu (
+    .a(alu_a_reg),
+    .b(alu_b_reg),
+    .y(alu_y_reg),
+    .op(alu_op_reg)
   );
 
-  // ============================================================
-  // IF 阶段
-  // ============================================================
-  cpu_if_master if_stage (
-      .clk(sys_clk),
-      .rst(sys_rst),
-
-      .stall_flush_in_i(stall_flush_if_id_in),
-      .stall_flush_out_o(stall_flush_if_out),
-
-      .pc_jump_i(pc_jump),
-      .pc_jump_valid_i(pc_jump_valid),
-
-      // Wishbone 接口
-      .wb_adr_o(if_wb_adr),
-      .wb_dat_i(if_wb_dat_i),
-      .wb_we_o(if_wb_we),
-      .wb_sel_o(if_wb_sel),
-      .wb_stb_o(if_wb_stb),
-      .wb_ack_i(if_wb_ack),
-      .wb_cyc_o(if_wb_cyc),
-
-      .if_id_o(if_id_reg_r)
+  lab5_regfile # (
+    .DATA_WIDTH(32)
+  ) regfile (
+    .clk(clk_10M),
+    .reset(reset_btn),
+    .waddr(rf_waddr_reg),
+    .wdata(rf_wdata_reg),
+    .raddr_a(rf_raddr_a_reg),
+    .raddr_b(rf_raddr_b_reg),
+    .rdata_a(rf_rdata_a_reg),
+    .rdata_b(rf_rdata_b_reg),
+    .we(rf_we_reg)
   );
+  
+  // ============ lab5 Master begin ===================
+  logic        wbm_cyc_o;
+  logic        wbm_stb_o;
+  logic        wbm_ack_i;
+  logic [31:0] wbm_adr_o;
+  logic [31:0] wbm_dat_o;
+  logic [31:0] wbm_dat_i;
+  logic [ 3:0] wbm_sel_o;
+  logic        wbm_we_o;
 
-  assign if_wb_dat_o = 32'b0;  // IF 只读不写
+  lab5_cpu_controller #(
+    .ADDR_WIDTH(32),
+    .DATA_WIDTH(32)
+  ) cpu_controller (
+    .clk_i(sys_clk),
+    .rst_i(sys_rst),
 
-  // ============================================================
-  // ID 阶段
-  // ============================================================
-  cpu_id_master id_stage (
-      .clk(sys_clk),
-      .rst(sys_rst),
+    // RegFile
+    .rf_rdata_a(rf_rdata_a_reg),
+    .rf_rdata_b(rf_rdata_b_reg),
+    .rf_raddr_a(rf_raddr_a_reg),
+    .rf_raddr_b(rf_raddr_b_reg),
+    .rf_waddr(rf_waddr_reg),
+    .rf_wdata(rf_wdata_reg),
+    .rf_we(rf_we_reg),
 
-      .stall_flush_in_i(stall_flush_id_ex_in),
-      .stall_flush_out_o(stall_flush_id_out),
+    // ALU
+    .alu_y(alu_y_reg),
+    .alu_a(alu_a_reg),
+    .alu_b(alu_b_reg),
+    .alu_op(alu_op_reg),
 
-      .if_id_i(if_id_reg_r),
-
-      // 寄存器文件读端口
-      .rf_raddr_a_o(rf_raddr_a),
-      .rf_raddr_b_o(rf_raddr_b),
-      .rf_rdata_a_i(rf_rdata_a),
-      .rf_rdata_b_i(rf_rdata_b),
-
-      // 数据冲突检测信号
-      .exe_mem_wen_i(ex_mem_reg_r.rf_wen),
-      .exe_mem_waddr_i(ex_mem_reg_r.rf_waddr),
-      .mem_wb_wen_i(mem_wb_reg_r.rf_wen),
-      .mem_wb_waddr_i(mem_wb_reg_r.rf_waddr),
-      .wb_wen_i(1'b0),
-      .wb_waddr_i(5'b0),
-
-      .id_ex_o(id_ex_reg_r)
+    // Wishbone
+    .wb_cyc_o(wbm_cyc_o),
+    .wb_stb_o(wbm_stb_o),
+    .wb_ack_i(wbm_ack_i),
+    .wb_adr_o(wbm_adr_o),
+    .wb_dat_o(wbm_dat_o),
+    .wb_dat_i(wbm_dat_i),
+    .wb_sel_o(wbm_sel_o),
+    .wb_we_o(wbm_we_o)
   );
-
-  // ============================================================
-  // EXE 阶段
-  // ============================================================
-  cpu_exe_master exe_stage (
-      .clk(sys_clk),
-      .rst(sys_rst),
-
-      .stall_flush_in_i(stall_flush_ex_mem_in),
-      .stall_flush_out_o(stall_flush_exe_out),
-
-      .id_ex_i(id_ex_reg_r),
-
-      // WB 阶段数据前递
-      .wb_rf_wdata_i(mem_wb_reg_r.rf_wdata),
-      .wb_rf_waddr_i(mem_wb_reg_r.rf_waddr),
-      .wb_rf_wen_i(mem_wb_reg_r.rf_wen),
-
-      // 分支跳转
-      .pc_jump_o(pc_jump),
-      .pc_jump_valid_o(pc_jump_valid),
-
-      .ex_mem_o(ex_mem_reg_r)
-  );
-
-  // ============================================================
-  // MEM 阶段
-  // ============================================================
-  cpu_mem_master mem_stage (
-      .clk(sys_clk),
-      .rst(sys_rst),
-
-      .stall_flush_in_i(stall_flush_mem_wb_in),
-      .stall_flush_out_o(stall_flush_mem_out),
-
-      .ex_mem_i(ex_mem_reg_r),
-
-      // Wishbone 接口
-      .wb_adr_o(mem_wb_adr),
-      .wb_dat_i(mem_wb_dat_i),
-      .wb_dat_o(mem_wb_dat_o),
-      .wb_we_o(mem_wb_we),
-      .wb_sel_o(mem_wb_sel),
-      .wb_stb_o(mem_wb_stb),
-      .wb_ack_i(mem_wb_ack),
-      .wb_cyc_o(mem_wb_cyc),
-
-      .mem_wb_o(mem_wb_reg_r)
-  );
-
-  // ============================================================
-  // 寄存器文件
-  // ============================================================
-  register_file regfile (
-      .clk(sys_clk),
-      .reset(sys_rst),
-
-      // 写端口
-      .waddr(mem_wb_reg_r.rf_waddr),
-      .wdata(mem_wb_reg_r.rf_wdata),
-      .we(mem_wb_reg_r.rf_wen),
-
-      // 读端口 A
-      .raddr_a(rf_raddr_a),
-      .rdata_a(rf_rdata_a),
-
-      // 读端口 B
-      .raddr_b(rf_raddr_b),
-      .rdata_b(rf_rdata_b)
-  );
-
-  // ============================================================
-  // Wishbone 仲裁器（IF 和 MEM）
-  // ============================================================
-  wb_arbiter_2 #(
-      .DATA_WIDTH(32),
-      .ADDR_WIDTH(32),
-      .SELECT_WIDTH(4),
-      .ARB_TYPE_ROUND_ROBIN(0),
-      .ARB_LSB_HIGH_PRIORITY(1)  // Master 0 (MEM) 优先级更高
-  ) wb_arbiter (
-      .clk(sys_clk),
-      .rst(sys_rst),
-
-      // Master 0: MEM (高优先级)
-      .wbm0_adr_i(mem_wb_adr),
-      .wbm0_dat_i(mem_wb_dat_o),
-      .wbm0_dat_o(mem_wb_dat_i),
-      .wbm0_we_i(mem_wb_we),
-      .wbm0_sel_i(mem_wb_sel),
-      .wbm0_stb_i(mem_wb_stb),
-      .wbm0_ack_o(mem_wb_ack),
-      .wbm0_err_o(),
-      .wbm0_rty_o(),
-      .wbm0_cyc_i(mem_wb_cyc),
-
-      // Master 1: IF (低优先级)
-      .wbm1_adr_i(if_wb_adr),
-      .wbm1_dat_i(if_wb_dat_o),
-      .wbm1_dat_o(if_wb_dat_i),
-      .wbm1_we_i(if_wb_we),
-      .wbm1_sel_i(if_wb_sel),
-      .wbm1_stb_i(if_wb_stb),
-      .wbm1_ack_o(if_wb_ack),
-      .wbm1_err_o(),
-      .wbm1_rty_o(),
-      .wbm1_cyc_i(if_wb_cyc),
-
-      // Slave: 到 MUX
-      .wbs_adr_o(arb_wb_adr),
-      .wbs_dat_i(arb_wb_dat_i),
-      .wbs_dat_o(arb_wb_dat_o),
-      .wbs_we_o(arb_wb_we),
-      .wbs_sel_o(arb_wb_sel),
-      .wbs_stb_o(arb_wb_stb),
-      .wbs_ack_i(arb_wb_ack),
-      .wbs_err_i(1'b0),
-      .wbs_rty_i(1'b0),
-      .wbs_cyc_o(arb_wb_cyc)
-  );
+  
+  // ============ lab5 Master end ===================
 
   /* =========== Wishbone MUX begin =========== */
-  // Wishbone MUX (仲裁器) => 外设 Slaves
+  // Wishbone MUX (Masters) => bus slaves
   logic wbs0_cyc_o;
   logic wbs0_stb_o;
   logic wbs0_ack_i;
@@ -425,17 +229,17 @@ module lab5_top (
       .clk(sys_clk),
       .rst(sys_rst),
 
-      // Master interface (from arbiter)
-      .wbm_adr_i(arb_wb_adr),
-      .wbm_dat_i(arb_wb_dat_o),
-      .wbm_dat_o(arb_wb_dat_i),
-      .wbm_we_i(arb_wb_we),
-      .wbm_sel_i(arb_wb_sel),
-      .wbm_stb_i(arb_wb_stb),
-      .wbm_ack_o(arb_wb_ack),
+      // Master interface (to lab4 master)
+      .wbm_adr_i(wbm_adr_o),
+      .wbm_dat_i(wbm_dat_o),
+      .wbm_dat_o(wbm_dat_i),
+      .wbm_we_i (wbm_we_o),
+      .wbm_sel_i(wbm_sel_o),
+      .wbm_stb_i(wbm_stb_o),
+      .wbm_ack_o(wbm_ack_i),
       .wbm_err_o(),
       .wbm_rty_o(),
-      .wbm_cyc_i(arb_wb_cyc),
+      .wbm_cyc_i(wbm_cyc_o),
 
       // Slave interface 0 (to BaseRAM controller)
       // Address range: 0x8000_0000 ~ 0x803F_FFFF
@@ -486,9 +290,9 @@ module lab5_top (
       .wbs2_cyc_o(wbs2_cyc_o)
   );
 
-  /* =========== Wishbone MUX end =========== */
+  /* =========== lab4 MUX end =========== */
 
-  /* =========== Slaves begin =========== */
+  /* =========== lab4 Slaves begin =========== */
   sram_controller #(
       .SRAM_ADDR_WIDTH(20),
       .SRAM_DATA_WIDTH(32)
@@ -564,6 +368,6 @@ module lab5_top (
       .uart_rxd_i(rxd)
   );
 
-  /* =========== Slaves end =========== */
+  /* =========== lab4 Slaves end =========== */
 
 endmodule
