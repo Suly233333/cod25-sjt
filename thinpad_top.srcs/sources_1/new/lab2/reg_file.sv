@@ -1,6 +1,6 @@
 `default_nettype none
 
-module register_file (
+module reg_file (
     input wire clk,
     input wire reset,
     

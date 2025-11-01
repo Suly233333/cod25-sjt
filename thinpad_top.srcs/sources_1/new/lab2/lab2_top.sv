@@ -134,7 +134,7 @@ module lab2_top (
   );
   
   // 寄存器堆模块
-  register_file u_register_file (
+  reg_file u_register_file (
     .clk(clk_10M),
     .reset(reset_of_clk10M),
     .waddr(rf_waddr),
