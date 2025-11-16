@@ -21,6 +21,7 @@ module ID (
     output logic [2:0] imm_type_o,       // Immediate type (NONE/I/S/B/U)
     output logic [3:0] alu_op_o,         // ALU operation
     output logic [3:0] instr_type_o,     // Instruction type (R/I/S/B/U)
+    output logic [7:0] instr_code_o,     // Specific instruction code (LUI, ADDI, LB, LW, SB, SW, etc.)
     output logic use_rs2_o,              // Whether instruction uses rs2
     output logic mem_wen_o,              // Memory write enable
     output logic rf_wen_o,               // Register file write enable
@@ -63,6 +64,20 @@ typedef enum logic [3:0] {
     OP_SRA = 4'b1001
 } alu_op_t;
 
+// Specific instruction code encoding
+typedef enum logic [7:0] {
+    INSTR_UNKNOWN = 8'h00,
+    INSTR_LUI = 8'h01,
+    INSTR_ADDI = 8'h02,
+    INSTR_ANDI = 8'h03,
+    INSTR_ADD = 8'h04,
+    INSTR_LB = 8'h05,
+    INSTR_LW = 8'h06,
+    INSTR_SB = 8'h07,
+    INSTR_SW = 8'h08,
+    INSTR_BEQ = 8'h09
+} instr_code_t;
+
 logic [6:0] opcode;
 logic [2:0] funct3;
 logic [4:0] rd, rs1, rs2;
@@ -84,6 +99,7 @@ always_comb begin
     imm_type_o = IMM_TYPE_NONE;
     alu_op_o = OP_NONE;
     instr_type_o = INSTR_TYPE_ERR;
+    instr_code_o = INSTR_UNKNOWN;
     use_rs2_o = 1'b0;
     mem_wen_o = 1'b0;
     rf_wen_o = 1'b0;
@@ -94,6 +110,7 @@ always_comb begin
         7'b0110111: begin  // LUI
             imm_type_o = IMM_TYPE_U;
             instr_type_o = INSTR_TYPE_U;
+            instr_code_o = INSTR_LUI;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b0;
             mem_wen_o = 1'b0;
@@ -113,13 +130,19 @@ always_comb begin
             rf_raddr_b_o = 5'b0;
             rf_waddr_o = rd;
             case (funct3)
-                3'b000: alu_op_o = OP_ADD;   // ADDI
-                3'b111: alu_op_o = OP_AND;   // ANDI
+                3'b000: begin
+                    alu_op_o = OP_ADD;   // ADDI
+                    instr_code_o = INSTR_ADDI;
+                end
+                3'b111: begin
+                    alu_op_o = OP_AND;   // ANDI
+                    instr_code_o = INSTR_ANDI;
+                end
                 default: alu_op_o = OP_NONE;
             endcase
         end
 
-        7'b0000011: begin  // LB
+        7'b0000011: begin  // LB, LW (Load)
             imm_type_o = IMM_TYPE_I;
             instr_type_o = INSTR_TYPE_I;
             alu_op_o = OP_ADD;
@@ -129,9 +152,14 @@ always_comb begin
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = 5'b0;
             rf_waddr_o = rd;
+            case (funct3)
+                3'b000: instr_code_o = INSTR_LB;   // LB - Load Byte
+                3'b010: instr_code_o = INSTR_LW;   // LW - Load Word
+                default: instr_code_o = INSTR_UNKNOWN;
+            endcase
         end
 
-        7'b0100011: begin  // SB, SW
+        7'b0100011: begin  // SB, SW (Store)
             imm_type_o = IMM_TYPE_S;
             instr_type_o = INSTR_TYPE_S;
             alu_op_o = OP_ADD;
@@ -141,11 +169,17 @@ always_comb begin
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = rs2;
             rf_waddr_o = 5'b0;
+            case (funct3)
+                3'b000: instr_code_o = INSTR_SB;   // SB - Store Byte
+                3'b010: instr_code_o = INSTR_SW;   // SW - Store Word
+                default: instr_code_o = INSTR_UNKNOWN;
+            endcase
         end
 
         7'b1100011: begin  // BEQ
             imm_type_o = IMM_TYPE_B;
             instr_type_o = INSTR_TYPE_B;
+            instr_code_o = INSTR_BEQ;
             alu_op_o = OP_SUB;
             use_rs2_o = 1'b1;
             mem_wen_o = 1'b0;
@@ -158,6 +192,7 @@ always_comb begin
         7'b0110011: begin  // ADD
             imm_type_o = IMM_TYPE_NONE;
             instr_type_o = INSTR_TYPE_R;
+            instr_code_o = INSTR_ADD;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b1;
             mem_wen_o = 1'b0;

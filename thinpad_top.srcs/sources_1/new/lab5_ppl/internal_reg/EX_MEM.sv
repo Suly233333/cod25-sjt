@@ -14,6 +14,7 @@ module ex_mem(
     input wire [4:0] rf_waddr_i,
     input wire [2:0] imm_type_i,
     input wire [3:0] instr_type_i,
+    input wire [7:0] instr_code_i,
     input wire mem_en_i,
     input wire rf_wen_i,
 
@@ -26,6 +27,7 @@ module ex_mem(
     output logic [4:0] rf_waddr_o,
     output logic [2:0] imm_type_o,
     output logic [3:0] instr_type_o,
+    output logic [7:0] instr_code_o,
     output logic mem_en_o,
     output logic rf_wen_o
 
@@ -42,6 +44,7 @@ module ex_mem(
         imm_o <= 32'b0;
         imm_type_o <= 3'b0;
         instr_type_o <= 4'b0;
+        instr_code_o <= 8'b0;
         mem_en_o <= 0;
         rf_wen_o <= 0;
         rf_waddr_o <= 0;
@@ -57,6 +60,7 @@ module ex_mem(
         imm_o <= 32'b0;
         imm_type_o <= 3'b0;
         instr_type_o <= 4'b0;
+        instr_code_o <= 8'b0;
         mem_en_o <= 0;
         rf_wen_o <= 0;
         rf_waddr_o <= 0;
@@ -70,6 +74,7 @@ module ex_mem(
         imm_o <= imm_i;
         imm_type_o <= imm_type_i;
         instr_type_o <= instr_type_i;
+        instr_code_o <= instr_code_i;
         mem_en_o <= mem_en_i;
         rf_wen_o <= rf_wen_i;
         rf_waddr_o <= rf_waddr_i;

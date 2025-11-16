@@ -314,6 +314,7 @@ logic id_rf_we_i;
 logic [31:0] id_rf_wdata_i, id_rf_rdata_a_o, id_rf_rdata_b_o;
 logic [4:0] exe_rf_waddr_i, mem_rf_waddr_i, wb_rf_waddr_i;
 logic [4:0] exe_rf_waddr_o, mem_rf_waddr_o;
+logic [7:0] id_instr_code_o;
 
 ID sys_ID(
     .clk_i(sys_clk),
@@ -334,6 +335,7 @@ ID sys_ID(
     .imm_type_o(id_imm_type_o),
     .alu_op_o(id_alu_op_o),
     .instr_type_o(id_instr_type_o),
+    .instr_code_o(id_instr_code_o),
     .use_rs2_o(id_use_rs2_o),
     .mem_wen_o(id_mem_wen_o),
     .rf_wen_o(id_rf_wen_o),
@@ -358,6 +360,7 @@ logic [31:0] exe_inst_i;
 logic [31:0] exe_rf_rdata_a_i, exe_rf_rdata_b_i;
 logic [2:0] exe_imm_type_i;
 logic [3:0] exe_alu_op_i, exe_instr_type_i;
+logic [7:0] exe_instr_code_i;
 logic exe_use_rs2_i, exe_rf_wen_i, exe_mem_wen_i;
 
 id_ex sys_id_ex(
@@ -375,6 +378,7 @@ id_ex sys_id_ex(
     .imm_type_i(id_imm_type_o),
     .alu_op_i(id_alu_op_o),
     .instr_type_i(id_instr_type_o),
+    .instr_code_i(id_instr_code_o),
     .use_rs2_i(id_use_rs2_o),
     .rf_wen_i(id_rf_wen_o),
     .mem_wen_i(id_mem_wen_o),
@@ -387,6 +391,7 @@ id_ex sys_id_ex(
     .imm_type_o(exe_imm_type_i),
     .alu_op_o(exe_alu_op_i),
     .instr_type_o(exe_instr_type_i),
+    .instr_code_o(exe_instr_code_i),
     .use_rs2_o(exe_use_rs2_i),
     .rf_wen_o(exe_rf_wen_i),
     .mem_wen_o(exe_mem_wen_i)
@@ -395,6 +400,7 @@ id_ex sys_id_ex(
 logic [31:0] exe_pc_o;
 logic [31:0] exe_inst_o;
 logic [31:0] exe_imm_o;
+logic [7:0] exe_instr_code_o;
 logic [31:0] exe_rf_wdata_o;
 
 logic [31:0] exe_mem_addr_o, exe_mem_data_o;
@@ -415,6 +421,7 @@ EXE sys_EXE(
     .imm_type_i(exe_imm_type_i),
     .alu_op_i(exe_alu_op_i),
     .instr_type_i(exe_instr_type_i),
+    .instr_code_i(exe_instr_code_i),
     .use_rs2_i(exe_use_rs2_i),
     .rf_wen_i(exe_rf_wen_i),
     .mem_wen_i(exe_mem_wen_i),
@@ -422,6 +429,7 @@ EXE sys_EXE(
     .pc_o(exe_pc_o),
     .inst_o(exe_inst_o),
     .imm_o(exe_imm_o),
+    .instr_code_o(exe_instr_code_o),
     .mem_en_o(exe_mem_en_o),
     .rf_wen_o(exe_rf_wen_o),
     .mem_data_o(exe_mem_data_o),
@@ -455,6 +463,7 @@ logic mem_rf_wen_i, mem_mem_en_i;
 logic [31:0] mem_alu_y_i;
 logic [2:0] mem_imm_type_i;
 logic [3:0] mem_instr_type_i;
+logic [7:0] mem_instr_code_i;
 
 ex_mem sys_ex_mem(
     .clk_i(sys_clk),
@@ -471,6 +480,7 @@ ex_mem sys_ex_mem(
     .imm_i(exe_imm_o),
     .imm_type_i(exe_imm_type_i),
     .instr_type_i(exe_instr_type_i),
+    .instr_code_i(exe_instr_code_o),
     .mem_en_i(exe_mem_en_o),
     .rf_wen_i(exe_rf_wen_o),
     .rf_waddr_i(exe_rf_waddr_o),
@@ -483,6 +493,7 @@ ex_mem sys_ex_mem(
     .imm_o(mem_imm_i),
     .imm_type_o(mem_imm_type_i),
     .instr_type_o(mem_instr_type_i),
+    .instr_code_o(mem_instr_code_i),
     .mem_en_o(mem_mem_en_i),
     .rf_wen_o(mem_rf_wen_i),
     .rf_waddr_o(mem_rf_waddr_i)
@@ -507,6 +518,7 @@ MEM_master #(
     .wb_data_i(mem_wb_dat_i),
     .imm_type_i(mem_imm_type_i),
     .instr_type_i(mem_instr_type_i),
+    .instr_code_i(mem_instr_code_i),
     .mem_en_i(mem_mem_en_i),
     .rf_wen_i(mem_rf_wen_i),
     .stall_i(mem_stall_i),

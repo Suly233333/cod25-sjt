@@ -13,6 +13,7 @@ module id_ex (
     input wire [2:0] imm_type_i,
     input wire [3:0] alu_op_i,
     input wire [3:0] instr_type_i,
+    input wire [7:0] instr_code_i,
     input wire use_rs2_i,
     input wire rf_wen_i,
     input wire mem_wen_i,
@@ -25,6 +26,7 @@ module id_ex (
     output logic [2:0] imm_type_o,
     output logic [3:0] alu_op_o,
     output logic [3:0] instr_type_o,
+    output logic [7:0] instr_code_o,
     output logic use_rs2_o,
     output logic rf_wen_o,
     output logic mem_wen_o
@@ -41,6 +43,7 @@ always_ff @(posedge clk_i) begin
         imm_type_o <= 3'b0;
         alu_op_o <= 4'b0;
         instr_type_o <= 4'b0;
+        instr_code_o <= 8'b0;
         use_rs2_o <= 1'b0;
         rf_wen_o <= 1'b0;
         mem_wen_o <= 1'b0;
@@ -56,6 +59,7 @@ always_ff @(posedge clk_i) begin
         imm_type_o <= 3'b0;
         alu_op_o <= 4'b0;
         instr_type_o <= 4'b0;
+        instr_code_o <= 8'b0;
         use_rs2_o <= 1'b0;
         rf_wen_o <= 1'b0;
         mem_wen_o <= 1'b0;
@@ -69,6 +73,7 @@ always_ff @(posedge clk_i) begin
         imm_type_o <= imm_type_i;
         alu_op_o <= alu_op_i;
         instr_type_o <= instr_type_i;
+        instr_code_o <= instr_code_i;
         use_rs2_o <= use_rs2_i;
         rf_wen_o <= rf_wen_i;
         mem_wen_o <= mem_wen_i;
