@@ -84,6 +84,7 @@ always_ff @ (posedge clk_i) begin
                             inst_o <= inst_i;
                             rf_wen_o <= 0;
                             rf_waddr_o <= rf_waddr_i;
+                            rf_wdata_o <= 32'b0;
                             wb_cyc_o <= 1;
                             wb_stb_o <= 1;
                             wb_we_o <= 0;
@@ -109,6 +110,7 @@ always_ff @ (posedge clk_i) begin
                             inst_o <= inst_i;
                             rf_wen_o <= 0;
                             rf_waddr_o <= rf_waddr_i;
+                            rf_wdata_o <= 32'b0;
                             wb_cyc_o <= 1;
                             wb_stb_o <= 1;
                             wb_we_o <= 1;
@@ -137,6 +139,11 @@ always_ff @ (posedge clk_i) begin
                             rf_waddr_o <= rf_waddr_i;
                             mem_stall_o <= 1'b0;
                             mem_flush_o <= 1'b0;
+                            if(instr_type_i == INSTR_TYPE_U)begin
+                                rf_wdata_o <= imm_i;
+                            end else begin
+                                rf_wdata_o <= alu_y_i;
+                            end
                         end
                     endcase
                 end else begin//跳过该阶段
@@ -164,7 +171,7 @@ always_ff @ (posedge clk_i) begin
                             state <= ST_IDLE;
                             wb_cyc_o <= 0;
                             wb_stb_o <= 0;
-                            wb_we_o <= 1;
+                            wb_we_o <= 0;
                             mem_stall_o <= 1'b0;
                             mem_flush_o <= 1'b0;
                         end

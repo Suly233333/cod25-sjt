@@ -306,7 +306,7 @@ if_id sys_if_id(
 logic [31:0] id_pc_o;
 logic [31:0] id_inst_o;
 logic id_rf_wen_o, id_mem_wen_o;
-logic [2:0] id_imm_type_o;
+logic [3:0] id_imm_type_o;
 logic [3:0] id_alu_op_o, id_instr_type_o;
 logic id_use_rs2_o;
 logic [4:0] id_rf_waddr_i, id_rf_waddr_o, id_rf_raddr_a_o, id_rf_raddr_b_o;
@@ -358,7 +358,7 @@ ppl_regfile sys_RegisterFile(
 logic [31:0] exe_pc_i;
 logic [31:0] exe_inst_i;
 logic [31:0] exe_rf_rdata_a_i, exe_rf_rdata_b_i;
-logic [2:0] exe_imm_type_i;
+logic [3:0] exe_imm_type_i;
 logic [3:0] exe_alu_op_i, exe_instr_type_i;
 logic [7:0] exe_instr_code_i;
 logic exe_use_rs2_i, exe_rf_wen_i, exe_mem_wen_i;
@@ -461,7 +461,7 @@ logic [31:0] mem_mem_addr_i, mem_mem_data_i;
 logic mem_rf_wen_i, mem_mem_en_i;
 
 logic [31:0] mem_alu_y_i;
-logic [2:0] mem_imm_type_i;
+logic [3:0] mem_imm_type_i;
 logic [3:0] mem_instr_type_i;
 logic [7:0] mem_instr_code_i;
 
