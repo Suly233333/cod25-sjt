@@ -16,7 +16,7 @@ module id_ex (
     input wire [7:0] instr_code_i,
     input wire use_rs2_i,
     input wire rf_wen_i,
-    input wire mem_wen_i,
+    input wire mem_en_i,
 
     output logic [31:0] pc_o,
     output logic [31:0] inst_o,
@@ -29,7 +29,7 @@ module id_ex (
     output logic [7:0] instr_code_o,
     output logic use_rs2_o,
     output logic rf_wen_o,
-    output logic mem_wen_o
+    output logic mem_en_o
 );
 
 always_ff @(posedge clk_i) begin
@@ -46,7 +46,7 @@ always_ff @(posedge clk_i) begin
         instr_code_o <= 8'b0;
         use_rs2_o <= 1'b0;
         rf_wen_o <= 1'b0;
-        mem_wen_o <= 1'b0;
+        mem_en_o <= 1'b0;
     end else if(stall_i) begin
         //do nothing
     end else if(bubble_i) begin
@@ -62,7 +62,7 @@ always_ff @(posedge clk_i) begin
         instr_code_o <= 8'b0;
         use_rs2_o <= 1'b0;
         rf_wen_o <= 1'b0;
-        mem_wen_o <= 1'b0;
+        mem_en_o <= 1'b0;
     end else begin
         //change regs to input
         pc_o <= pc_i;
@@ -76,7 +76,7 @@ always_ff @(posedge clk_i) begin
         instr_code_o <= instr_code_i;
         use_rs2_o <= use_rs2_i;
         rf_wen_o <= rf_wen_i;
-        mem_wen_o <= mem_wen_i;
+        mem_en_o <= mem_en_i;
     end
 end
 endmodule

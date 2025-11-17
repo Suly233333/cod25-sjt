@@ -15,7 +15,7 @@ module EXE(
     input wire [7:0] instr_code_i,
     input wire use_rs2_i,
     input wire rf_wen_i,
-    input wire mem_wen_i,
+    input wire mem_en_i,
 
     output logic [31:0] pc_o,
     output logic [31:0] inst_o,
@@ -62,7 +62,7 @@ always_comb begin
     inst_o = inst_i;
     imm_o = imm_generated;
     instr_code_o = instr_code_i;
-    mem_en_o = mem_wen_i;
+    mem_en_o = mem_en_i;
     rf_wen_o = rf_wen_i;
     mem_data_o = 32'b0;
     mem_addr_o = 32'b0;
@@ -86,7 +86,7 @@ always_comb begin
             alu_a_o = rf_rdata_a_i;
 
             // Distinguish between arithmetic/logic ops and Load/JALR
-            if (mem_wen_i) begin
+            if (mem_en_i) begin
                 // Load instructions: LB, LH, LW, LBU, LHU
                 alu_b_o = imm_generated;
                 mem_addr_o = rf_rdata_a_i + $signed(imm_generated);

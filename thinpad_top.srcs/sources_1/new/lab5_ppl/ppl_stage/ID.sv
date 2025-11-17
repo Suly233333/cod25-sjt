@@ -25,7 +25,7 @@ module ID (
     output logic [3:0] instr_type_o,     // Instruction type (R/I/S/B/U/J)
     output logic [7:0] instr_code_o,     // Specific instruction code (LUI, ADDI, LB, LW, SB, SW, etc.)
     output logic use_rs2_o,              // Whether instruction uses rs2
-    output logic mem_wen_o,              // Memory write enable
+    output logic mem_en_o,              // Memory write enable
     output logic rf_wen_o,               // Register file write enable
 
     output logic id_stall_o,
@@ -56,7 +56,7 @@ always_comb begin
     instr_type_o = INSTR_TYPE_ERR;
     instr_code_o = INSTR_UNKNOWN;
     use_rs2_o = 1'b0;
-    mem_wen_o = 1'b0;
+    mem_en_o = 1'b0;
     rf_wen_o = 1'b0;
     id_stall_o = 1'b0;
     id_flush_o = 1'b0;
@@ -69,7 +69,7 @@ always_comb begin
             instr_code_o = INSTR_LUI;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b0;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b1;
             rf_raddr_a_o = 5'b0;
             rf_raddr_b_o = 5'b0;
@@ -82,7 +82,7 @@ always_comb begin
             instr_code_o = INSTR_AUIPC;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b0;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b1;
             rf_raddr_a_o = 5'b0;
             rf_raddr_b_o = 5'b0;
@@ -94,7 +94,7 @@ always_comb begin
             imm_type_o = IMM_TYPE_I;
             instr_type_o = INSTR_TYPE_I;
             use_rs2_o = 1'b0;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b1;
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = 5'b0;
@@ -149,7 +149,7 @@ always_comb begin
             imm_type_o = IMM_TYPE_NONE;
             instr_type_o = INSTR_TYPE_R;
             use_rs2_o = 1'b1;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b1;
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = rs2;
@@ -213,7 +213,7 @@ always_comb begin
             instr_type_o = INSTR_TYPE_I;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b0;
-            mem_wen_o = 1'b1;
+            mem_en_o = 1'b1;
             rf_wen_o = 1'b1;
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = 5'b0;
@@ -234,7 +234,7 @@ always_comb begin
             instr_type_o = INSTR_TYPE_S;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b1;
-            mem_wen_o = 1'b1;
+            mem_en_o = 1'b1;
             rf_wen_o = 1'b0;
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = rs2;
@@ -252,7 +252,7 @@ always_comb begin
             imm_type_o = IMM_TYPE_B;
             instr_type_o = INSTR_TYPE_B;
             use_rs2_o = 1'b1;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b0;
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = rs2;
@@ -292,7 +292,7 @@ always_comb begin
             instr_type_o = INSTR_TYPE_J;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b0;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b1;  // Write return address to rd
             rf_raddr_a_o = 5'b0;
             rf_raddr_b_o = 5'b0;
@@ -305,7 +305,7 @@ always_comb begin
             instr_type_o = INSTR_TYPE_I;
             alu_op_o = OP_ADD;
             use_rs2_o = 1'b0;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b1;  // Write return address to rd
             rf_raddr_a_o = rs1;
             rf_raddr_b_o = 5'b0;
@@ -318,7 +318,7 @@ always_comb begin
             instr_type_o = INSTR_TYPE_ERR;
             alu_op_o = OP_NONE;
             use_rs2_o = 1'b0;
-            mem_wen_o = 1'b0;
+            mem_en_o = 1'b0;
             rf_wen_o = 1'b0;
         end
     endcase

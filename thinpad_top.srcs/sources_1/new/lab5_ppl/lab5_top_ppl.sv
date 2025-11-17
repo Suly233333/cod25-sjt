@@ -305,7 +305,7 @@ if_id sys_if_id(
 
 logic [31:0] id_pc_o;
 logic [31:0] id_inst_o;
-logic id_rf_wen_o, id_mem_wen_o;
+logic id_rf_wen_o, id_mem_en_o;
 logic [3:0] id_imm_type_o;
 logic [3:0] id_alu_op_o, id_instr_type_o;
 logic id_use_rs2_o;
@@ -337,7 +337,7 @@ ID sys_ID(
     .instr_type_o(id_instr_type_o),
     .instr_code_o(id_instr_code_o),
     .use_rs2_o(id_use_rs2_o),
-    .mem_wen_o(id_mem_wen_o),
+    .mem_en_o(id_mem_en_o),
     .rf_wen_o(id_rf_wen_o),
     .id_stall_o(id_stall_o),
     .id_flush_o(id_flush_o)
@@ -361,7 +361,7 @@ logic [31:0] exe_rf_rdata_a_i, exe_rf_rdata_b_i;
 logic [3:0] exe_imm_type_i;
 logic [3:0] exe_alu_op_i, exe_instr_type_i;
 logic [7:0] exe_instr_code_i;
-logic exe_use_rs2_i, exe_rf_wen_i, exe_mem_wen_i;
+logic exe_use_rs2_i, exe_rf_wen_i, exe_mem_en_i;
 
 id_ex sys_id_ex(
     .clk_i(sys_clk),
@@ -381,7 +381,7 @@ id_ex sys_id_ex(
     .instr_code_i(id_instr_code_o),
     .use_rs2_i(id_use_rs2_o),
     .rf_wen_i(id_rf_wen_o),
-    .mem_wen_i(id_mem_wen_o),
+    .mem_en_i(id_mem_en_o),
 
     .pc_o(exe_pc_i),
     .inst_o(exe_inst_i),
@@ -394,7 +394,7 @@ id_ex sys_id_ex(
     .instr_code_o(exe_instr_code_i),
     .use_rs2_o(exe_use_rs2_i),
     .rf_wen_o(exe_rf_wen_i),
-    .mem_wen_o(exe_mem_wen_i)
+    .mem_en_o(exe_mem_en_i)
 );
 
 logic [31:0] exe_pc_o;
@@ -424,7 +424,7 @@ EXE sys_EXE(
     .instr_code_i(exe_instr_code_i),
     .use_rs2_i(exe_use_rs2_i),
     .rf_wen_i(exe_rf_wen_i),
-    .mem_wen_i(exe_mem_wen_i),
+    .mem_en_i(exe_mem_en_i),
 
     .pc_o(exe_pc_o),
     .inst_o(exe_inst_o),
