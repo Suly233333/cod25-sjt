@@ -1,3 +1,5 @@
+`include "../type.sv"
+
 module MEM_master #(
     parameter ADDR_WIDTH = 32,
     parameter DATA_WIDTH = 32
@@ -12,7 +14,7 @@ module MEM_master #(
     input wire [31:0] mem_addr_i,
     input wire [31:0] mem_data_i,
     input wire [DATA_WIDTH-1:0] wb_data_i,
-    input wire [2:0] imm_type_i,
+    input wire [3:0] imm_type_i,
     input wire [3:0] instr_type_i,
     input wire [7:0] instr_code_i,
     input wire mem_en_i,
@@ -42,29 +44,6 @@ typedef enum logic [1:0]{
     ST_LOAD = 1,
     ST_STORE = 2
 } state_t;
-
-typedef enum logic [3:0] {
-    INSTR_TYPE_ERR = 4'b0000,
-    INSTR_TYPE_R = 4'b0001,
-    INSTR_TYPE_I = 4'b0010,
-    INSTR_TYPE_S = 4'b0011,
-    INSTR_TYPE_B = 4'b0100,
-    INSTR_TYPE_U = 4'b0101
-} instr_type_t;
-
-// Specific instruction code encoding (match ID.sv)
-typedef enum logic [7:0] {
-    INSTR_UNKNOWN = 8'h00,
-    INSTR_LUI = 8'h01,
-    INSTR_ADDI = 8'h02,
-    INSTR_ANDI = 8'h03,
-    INSTR_ADD = 8'h04,
-    INSTR_LB = 8'h05,
-    INSTR_LW = 8'h06,
-    INSTR_SB = 8'h07,
-    INSTR_SW = 8'h08,
-    INSTR_BEQ = 8'h09
-} instr_code_t;
 
 state_t state;
 
@@ -108,10 +87,11 @@ always_ff @ (posedge clk_i) begin
                             wb_cyc_o <= 1;
                             wb_stb_o <= 1;
                             wb_we_o <= 0;
-                            // Use instr_code to determine sel instead of funct3
+                            // Use instr_code to determine sel based on load size
                             case (instr_code_i)
-                                INSTR_LB: wb_sel_o <= 4'b0001;  // Load Byte
-                                INSTR_LW: wb_sel_o <= 4'b1111;  // Load Word
+                                INSTR_LB, INSTR_LBU: wb_sel_o <= 4'b0001;  // Load Byte
+                                INSTR_LH, INSTR_LHU: wb_sel_o <= 4'b0011;  // Load Half-word
+                                INSTR_LW: wb_sel_o <= 4'b1111;             // Load Word
                                 default: wb_sel_o <= 4'b0000;
                             endcase
                             wb_addr_o <= mem_addr_i;
@@ -132,9 +112,10 @@ always_ff @ (posedge clk_i) begin
                             wb_cyc_o <= 1;
                             wb_stb_o <= 1;
                             wb_we_o <= 1;
-                            // Use instr_code to determine sel instead of funct3
+                            // Use instr_code to determine sel based on store size
                             case (instr_code_i)
                                 INSTR_SB: wb_sel_o <= 4'b0001;  // Store Byte
+                                INSTR_SH: wb_sel_o <= 4'b0011;  // Store Half-word
                                 INSTR_SW: wb_sel_o <= 4'b1111;  // Store Word
                                 default: wb_sel_o <= 4'b0000;
                             endcase

@@ -21,8 +21,10 @@ module ppl_alu #(
   localparam OP_SLL = 4'b0111;  // 逻辑左移
   localparam OP_SRL = 4'b1000;  // 逻辑右移
   localparam OP_SRA = 4'b1001;  // 算术右移
-  localparam OP_ROL = 4'b1010;  // 循环左移
-  
+  localparam OP_ROL = 4'b1010;   // 循环左移
+  localparam OP_SLT = 4'b1011;   // 小于(有符号)
+  localparam OP_SLTU = 4'b1100;  // 小于(无符号)
+
   // ALU运算
   reg signed [31:0] compute_reg;
   reg [9:0] num;
@@ -56,6 +58,14 @@ module ppl_alu #(
         OP_ROL: begin
           num = alu_b % 32;
           alu_y = (alu_a << num) | (alu_a >> (32 - num));
+        end
+        OP_SLT: begin
+          // Set Less Than (signed)
+          alu_y = ($signed(alu_a) < $signed(alu_b)) ? 32'h00000001 : 32'h00000000;
+        end
+        OP_SLTU: begin
+          // Set Less Than Unsigned
+          alu_y = (alu_a < alu_b) ? 32'h00000001 : 32'h00000000;
         end
         default: alu_y = {DATA_WIDTH{1'b0}};  // 默认输出0
       endcase

@@ -1,3 +1,5 @@
+`include "../type.sv"
+
 module EXE(
     input wire clk_i,
     input wire rst_i,
@@ -7,7 +9,7 @@ module EXE(
     input wire [31:0] rf_rdata_a_i,
     input wire [31:0] rf_rdata_b_i,
     input wire [4:0] rf_waddr_i,
-    input wire [2:0] imm_type_i,
+    input wire [3:0] imm_type_i,
     input wire [3:0] alu_op_i,
     input wire [3:0] instr_type_i,
     input wire [7:0] instr_code_i,
@@ -34,40 +36,7 @@ module EXE(
 
 );
 
-// Immediate type encoding (match ID.sv)
-typedef enum logic [2:0] {
-    IMM_TYPE_NONE = 3'b000,
-    IMM_TYPE_I = 3'b001,
-    IMM_TYPE_S = 3'b010,
-    IMM_TYPE_B = 3'b011,
-    IMM_TYPE_U = 3'b100
-} imm_type_t;
-
-// Instruction type encoding (match ID.sv)
-typedef enum logic [3:0] {
-    INSTR_TYPE_ERR = 4'b0000,
-    INSTR_TYPE_R = 4'b0001,
-    INSTR_TYPE_I = 4'b0010,
-    INSTR_TYPE_S = 4'b0011,
-    INSTR_TYPE_B = 4'b0100,
-    INSTR_TYPE_U = 4'b0101
-} instr_type_t;
-
-// Specific instruction code encoding (match ID.sv)
-typedef enum logic [7:0] {
-    INSTR_UNKNOWN = 8'h00,
-    INSTR_LUI = 8'h01,
-    INSTR_ADDI = 8'h02,
-    INSTR_ANDI = 8'h03,
-    INSTR_ADD = 8'h04,
-    INSTR_LB = 8'h05,
-    INSTR_LW = 8'h06,
-    INSTR_SB = 8'h07,
-    INSTR_SW = 8'h08,
-    INSTR_BEQ = 8'h09
-} instr_code_t;
-
-logic [31:0] imm_I, imm_S, imm_B, imm_U;
+logic [31:0] imm_I, imm_S, imm_B, imm_U, imm_J;
 logic [31:0] imm_generated;
 
 // Generate immediates based on imm_type
@@ -76,12 +45,14 @@ always_comb begin
     imm_S = {{20{inst_i[31]}}, inst_i[31:25], inst_i[11:7]};
     imm_B = {{20{inst_i[31]}}, inst_i[7], inst_i[30:25], inst_i[11:8], 1'b0};
     imm_U = {inst_i[31:12], {12{1'b0}}};
+    imm_J = {{12{inst_i[31]}}, inst_i[19:12], inst_i[20], inst_i[30:21], 1'b0};
 
     case (imm_type_i)
         IMM_TYPE_I: imm_generated = imm_I;
         IMM_TYPE_S: imm_generated = imm_S;
         IMM_TYPE_B: imm_generated = imm_B;
         IMM_TYPE_U: imm_generated = imm_U;
+        IMM_TYPE_J: imm_generated = imm_J;
         default: imm_generated = 32'b0;
     endcase
 end
@@ -105,52 +76,132 @@ always_comb begin
     case (instr_type_i)
         INSTR_TYPE_R: begin
             // R-type: ALU operation with two register operands
+            // ADD, SUB, AND, OR, XOR, SLL, SRL, SRA, SLT, SLTU
             alu_a_o = rf_rdata_a_i;
             alu_b_o = rf_rdata_b_i;
         end
 
         INSTR_TYPE_I: begin
-            // I-type: ALU operation or Load
+            // I-type: ALU operation with immediate or Load/Jump
             alu_a_o = rf_rdata_a_i;
-            alu_b_o = imm_generated;
 
-            // For Load instructions, calculate address
+            // Distinguish between arithmetic/logic ops and Load/JALR
             if (mem_wen_i) begin
+                // Load instructions: LB, LH, LW, LBU, LHU
+                alu_b_o = imm_generated;
                 mem_addr_o = rf_rdata_a_i + $signed(imm_generated);
+            end else if (instr_code_i == INSTR_JALR) begin
+                // JALR - Jump and Link Register
+                alu_b_o = 32'b0;
+                pc_jump_o = (rf_rdata_a_i + $signed(imm_generated)) & 32'hFFFFFFFE;  // Clear LSB
+                jump_o = 1'b1;
+                exe_flush_o = 1'b1;
+            end else begin
+                // Arithmetic/Logic immediate instructions: ADDI, ANDI, ORI, XORI, SLTI, SLTIU, SLLI, SRLI, SRAI
+                alu_b_o = imm_generated;
             end
         end
 
         INSTR_TYPE_S: begin
             // S-type: Store instruction
+            // SB, SH, SW
             alu_a_o = rf_rdata_a_i;
             alu_b_o = imm_generated;
             mem_addr_o = rf_rdata_a_i + $signed(imm_generated);
 
             // Prepare store data based on instr_code
             case (instr_code_i)
-                INSTR_SB: mem_data_o = {24'b0, rf_rdata_b_i[7:0]};   // SB - Store Byte
-                INSTR_SW: mem_data_o = rf_rdata_b_i;                 // SW - Store Word
+                INSTR_SB: mem_data_o = {24'b0, rf_rdata_b_i[7:0]};               // SB - Store Byte
+                INSTR_SH: mem_data_o = {16'b0, rf_rdata_b_i[15:0]};             // SH - Store Half-word
+                INSTR_SW: mem_data_o = rf_rdata_b_i;                            // SW - Store Word
                 default: mem_data_o = 32'b0;
             endcase
         end
 
         INSTR_TYPE_B: begin
             // B-type: Branch instruction
+            // BEQ, BNE, BLT, BGE, BLTU, BGEU
             alu_a_o = rf_rdata_a_i;
             alu_b_o = rf_rdata_b_i;
 
-            // Check if branch condition is met (assuming BEQ)
-            if (rf_rdata_a_i == rf_rdata_b_i) begin
-                jump_o = 1'b1;
-                pc_jump_o = pc_i + $signed(imm_generated);
-                exe_flush_o = 1'b1;
-            end
+            // Branch condition evaluation
+            case (instr_code_i)
+                INSTR_BEQ: begin
+                    if (rf_rdata_a_i == rf_rdata_b_i) begin
+                        jump_o = 1'b1;
+                        pc_jump_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = 1'b1;
+                    end
+                end
+                INSTR_BNE: begin
+                    if (rf_rdata_a_i != rf_rdata_b_i) begin
+                        jump_o = 1'b1;
+                        pc_jump_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = 1'b1;
+                    end
+                end
+                INSTR_BLT: begin
+                    if ($signed(rf_rdata_a_i) < $signed(rf_rdata_b_i)) begin
+                        jump_o = 1'b1;
+                        pc_jump_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = 1'b1;
+                    end
+                end
+                INSTR_BGE: begin
+                    if ($signed(rf_rdata_a_i) >= $signed(rf_rdata_b_i)) begin
+                        jump_o = 1'b1;
+                        pc_jump_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = 1'b1;
+                    end
+                end
+                INSTR_BLTU: begin
+                    if (rf_rdata_a_i < rf_rdata_b_i) begin
+                        jump_o = 1'b1;
+                        pc_jump_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = 1'b1;
+                    end
+                end
+                INSTR_BGEU: begin
+                    if (rf_rdata_a_i >= rf_rdata_b_i) begin
+                        jump_o = 1'b1;
+                        pc_jump_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = 1'b1;
+                    end
+                end
+                default: begin
+                    jump_o = 1'b0;
+                    exe_flush_o = 1'b0;
+                end
+            endcase
         end
 
         INSTR_TYPE_U: begin
             // U-type: Load Upper Immediate
-            alu_a_o = imm_generated;
-            alu_b_o = 32'b0;
+            // LUI, AUIPC
+            case (instr_code_i)
+                INSTR_LUI: begin
+                    alu_a_o = imm_generated;
+                    alu_b_o = 32'b0;
+                end
+                INSTR_AUIPC: begin
+                    alu_a_o = pc_i;
+                    alu_b_o = imm_generated;
+                end
+                default: begin
+                    alu_a_o = imm_generated;
+                    alu_b_o = 32'b0;
+                end
+            endcase
+        end
+
+        INSTR_TYPE_J: begin
+            // J-type: Jump and Link
+            // JAL
+            alu_a_o = pc_i;
+            alu_b_o = 32'd4;  // PC + 4 will be returned as ALU result for storing in rd
+            pc_jump_o = pc_i + $signed(imm_generated);
+            jump_o = 1'b1;
+            exe_flush_o = 1'b1;
         end
 
         default: begin
