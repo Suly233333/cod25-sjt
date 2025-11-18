@@ -92,7 +92,9 @@ always_comb begin
                 mem_addr_o = rf_rdata_a_i + $signed(imm_generated);
             end else if (instr_code_i == INSTR_JALR) begin
                 // JALR - Jump and Link Register
-                alu_b_o = 32'b0;
+                // Write rd = pc + 4, and jump to (rs1 + imm) & ~1
+                alu_a_o = pc_i;
+                alu_b_o = 32'd4;
                 pc_jump_o = (rf_rdata_a_i + $signed(imm_generated)) & 32'hFFFFFFFE;  // Clear LSB
                 jump_o = 1'b1;
                 exe_flush_o = 1'b1;

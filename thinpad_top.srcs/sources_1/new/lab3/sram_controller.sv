@@ -47,11 +47,11 @@ module sram_controller #(
   assign sram_data = sram_data_t_reg ? {SRAM_DATA_WIDTH{1'bz}} : sram_data_o_reg;
   assign sram_data_i_comb = sram_data;
 
-  initial begin
-    ram_ce_n_reg = 1'b1;
-    ram_oe_n_reg = 1'b1;
-    ram_we_n_reg = 1'b1;
-  end
+//  initial begin
+//    ram_ce_n_reg = 1'b1;
+//    ram_oe_n_reg = 1'b1;
+//    ram_we_n_reg = 1'b1;
+//  end
 
   typedef enum logic [2:0] {
     STATE_IDLE = 0,

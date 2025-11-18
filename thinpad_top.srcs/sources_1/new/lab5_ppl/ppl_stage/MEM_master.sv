@@ -51,8 +51,7 @@ logic [31:0] my_pc_o, my_inst_o;
 logic [4:0] my_rf_waddr_o;
 logic my_rf_wen_o;
 
-
-
+logic [7:0] instr_code_reg;
 
 always_ff @ (posedge clk_i) begin
     if(rst_i)begin
@@ -74,8 +73,10 @@ always_ff @ (posedge clk_i) begin
         my_inst_o <= 32'b0;
         my_rf_wen_o <= 1'b0;
         my_rf_waddr_o <= 5'b0;
+        instr_code_reg <= 4'b0;
     end else begin
             if(state == ST_IDLE)begin
+                instr_code_reg <= instr_code_i;
                 if(!stall_i && mem_en_i)begin
                     case(instr_type_i)
                         INSTR_TYPE_I: begin
@@ -90,8 +91,20 @@ always_ff @ (posedge clk_i) begin
                             wb_we_o <= 0;
                             // Use instr_code to determine sel based on load size
                             case (instr_code_i)
-                                INSTR_LB, INSTR_LBU: wb_sel_o <= 4'b0001;  // Load Byte
-                                INSTR_LH, INSTR_LHU: wb_sel_o <= 4'b0011;  // Load Half-word
+                                INSTR_LB, INSTR_LBU:   // Load Byte
+                                    case (mem_addr_i[1:0])
+                                        2'b00: wb_sel_o <= 4'b0001;
+                                        2'b01: wb_sel_o <= 4'b0010;
+                                        2'b10: wb_sel_o <= 4'b0100;
+                                        2'b11: wb_sel_o <= 4'b1000;
+                                        default: wb_sel_o <= 4'b0000;
+                                    endcase
+                                INSTR_LH, INSTR_LHU: 
+                                    case (mem_addr_i[1:0])
+                                        2'b00: wb_sel_o <= 4'b0011;
+                                        2'b10: wb_sel_o <= 4'b1100;
+                                        default: wb_sel_o <= 4'b0000;
+                                    endcase
                                 INSTR_LW: wb_sel_o <= 4'b1111;             // Load Word
                                 default: wb_sel_o <= 4'b0000;
                             endcase
@@ -105,7 +118,6 @@ always_ff @ (posedge clk_i) begin
                             my_rf_waddr_o <= rf_waddr_i;
                         end
                         INSTR_TYPE_S: begin
-                            // Store instruction
                             pc_o <= pc_i;
                             inst_o <= inst_i;
                             rf_wen_o <= 0;
@@ -114,15 +126,31 @@ always_ff @ (posedge clk_i) begin
                             wb_cyc_o <= 1;
                             wb_stb_o <= 1;
                             wb_we_o <= 1;
-                            // Use instr_code to determine sel based on store size
-                            case (instr_code_i)
-                                INSTR_SB: wb_sel_o <= 4'b0001;  // Store Byte
-                                INSTR_SH: wb_sel_o <= 4'b0011;  // Store Half-word
-                                INSTR_SW: wb_sel_o <= 4'b1111;  // Store Word
-                                default: wb_sel_o <= 4'b0000;
-                            endcase
                             wb_addr_o <= mem_addr_i;
-                            wb_data_o <= mem_data_i;
+                            case (instr_code_i)
+                                INSTR_SB: begin
+                                    case (mem_addr_i[1:0])
+                                        2'b00: begin wb_sel_o <= 4'b0001; wb_data_o <= mem_data_i; end
+                                        2'b01: begin wb_sel_o <= 4'b0010; wb_data_o <= mem_data_i << 8; end
+                                        2'b10: begin wb_sel_o <= 4'b0100; wb_data_o <= mem_data_i << 16; end
+                                        2'b11: begin wb_sel_o <= 4'b1000; wb_data_o <= mem_data_i << 24; end
+                                        default: begin wb_sel_o <= 4'b0000; wb_data_o <= 32'b0; end
+                                    endcase
+                                end
+                                INSTR_SH: begin
+                                    case (mem_addr_i[1:0])
+                                        2'b00: begin wb_sel_o <= 4'b0011; wb_data_o <= mem_data_i; end
+                                        2'b10: begin wb_sel_o <= 4'b1100; wb_data_o <= mem_data_i << 16; end
+                                        default: begin wb_sel_o <= 4'b0000; wb_data_o <= 32'b0; end
+                                    endcase
+                                end
+                                INSTR_SW: begin
+                                    wb_sel_o <= 4'b1111; wb_data_o <= mem_data_i;
+                                end
+                                default: begin
+                                    wb_sel_o <= 4'b0000; wb_data_o <= 32'b0;
+                                end
+                            endcase
                             state <= ST_STORE;
                             mem_stall_o <= 1'b1;
                             mem_flush_o <= 1'b0;
@@ -140,7 +168,10 @@ always_ff @ (posedge clk_i) begin
                             mem_stall_o <= 1'b0;
                             mem_flush_o <= 1'b0;
                             if(instr_type_i == INSTR_TYPE_U)begin
-                                rf_wdata_o <= imm_i;
+                                case(instr_code_i)
+                                    INSTR_LUI: rf_wdata_o <= imm_i;
+                                    default:   rf_wdata_o <= alu_y_i;
+                                endcase
                             end else begin
                                 rf_wdata_o <= alu_y_i;
                             end
@@ -154,7 +185,10 @@ always_ff @ (posedge clk_i) begin
                     mem_stall_o <= 1'b0;
                     mem_flush_o <= 1'b0;
                     if(instr_type_i == INSTR_TYPE_U)begin
-                        rf_wdata_o <= imm_i;
+                        case(instr_code_i)
+                            INSTR_LUI: rf_wdata_o <= imm_i;
+                            default:   rf_wdata_o <= alu_y_i;//AUIPC
+                        endcase
                     end else begin
                         rf_wdata_o <= alu_y_i;
                     end
@@ -167,7 +201,37 @@ always_ff @ (posedge clk_i) begin
                             inst_o <= my_inst_o;
                             rf_wen_o <= my_rf_wen_o;
                             rf_waddr_o <= my_rf_waddr_o;
-                            rf_wdata_o <= wb_data_i;
+                            case (instr_code_reg)
+                                INSTR_LW: rf_wdata_o <= wb_data_i;
+                                INSTR_LH: begin
+                                    case (wb_addr_o[1:0])
+                                        2'b00: rf_wdata_o <= {{16{wb_data_i[15]}}, wb_data_i[15:0]};
+                                        2'b10: rf_wdata_o <= {{16{wb_data_i[31]}}, wb_data_i[31:16]};
+                                    endcase
+                                end
+                                INSTR_LHU: begin
+                                    case (wb_addr_o[1:0])
+                                        2'b00: rf_wdata_o <= {16'b0, wb_data_i[15:0]};
+                                        2'b10: rf_wdata_o <= {16'b0, wb_data_i[31:16]};
+                                    endcase
+                                end
+                                INSTR_LB: begin
+                                    case (wb_addr_o[1:0])
+                                        2'b00: rf_wdata_o <= {{24{wb_data_i[7]}}, wb_data_i[7:0]};
+                                        2'b01: rf_wdata_o <= {{24{wb_data_i[15]}}, wb_data_i[15:8]};
+                                        2'b10: rf_wdata_o <= {{24{wb_data_i[23]}}, wb_data_i[23:16]};
+                                        2'b11: rf_wdata_o <= {{24{wb_data_i[31]}}, wb_data_i[31:24]};
+                                    endcase
+                                end
+                                INSTR_LBU: begin
+                                    case (wb_addr_o[1:0])
+                                        2'b00: rf_wdata_o <= {24'b0, wb_data_i[7:0]};
+                                        2'b01: rf_wdata_o <= {24'b0, wb_data_i[15:8]};
+                                        2'b10: rf_wdata_o <= {24'b0, wb_data_i[23:16]};
+                                        2'b11: rf_wdata_o <= {24'b0, wb_data_i[31:24]};
+                                    endcase
+                                end
+                            endcase
                             state <= ST_IDLE;
                             wb_cyc_o <= 0;
                             wb_stb_o <= 0;
