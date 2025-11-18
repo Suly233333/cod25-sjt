@@ -11,7 +11,7 @@ module id_ex (
     input wire [31:0] rf_rdata_b_i,
     input wire [4:0] rf_waddr_i,
     input wire [3:0] imm_type_i,
-    input wire [3:0] alu_op_i,
+    input wire [4:0] alu_op_i,
     input wire [3:0] instr_type_i,
     input wire [7:0] instr_code_i,
     input wire use_rs2_i,
@@ -24,7 +24,7 @@ module id_ex (
     output logic [31:0] rf_rdata_b_o,
     output logic [4:0] rf_waddr_o,
     output logic [3:0] imm_type_o,
-    output logic [3:0] alu_op_o,
+    output logic [4:0] alu_op_o,
     output logic [3:0] instr_type_o,
     output logic [7:0] instr_code_o,
     output logic use_rs2_o,
@@ -41,7 +41,7 @@ always_ff @(posedge clk_i) begin
         rf_rdata_b_o <= 32'b0;
         rf_waddr_o <= 5'b0;
         imm_type_o <= 4'b0;
-        alu_op_o <= 4'b0;
+        alu_op_o <= 5'b0;
         instr_type_o <= 4'b0;
         instr_code_o <= 8'b0;
         use_rs2_o <= 1'b0;
@@ -57,7 +57,7 @@ always_ff @(posedge clk_i) begin
         rf_rdata_b_o <= 32'b0;
         rf_waddr_o <= 5'b0;
         imm_type_o <= 4'b0;
-        alu_op_o <= 4'b0;
+        alu_op_o <= 5'b0;
         instr_type_o <= 4'b0;
         instr_code_o <= 8'b0;
         use_rs2_o <= 1'b0;

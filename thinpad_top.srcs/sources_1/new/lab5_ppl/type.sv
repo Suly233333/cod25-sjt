@@ -2,20 +2,23 @@
 `define TYPE
 
 // ALU operation encoding
-typedef enum logic [3:0] {
-    OP_NONE = 4'b0000,
-    OP_ADD = 4'b0001,
-    OP_SUB = 4'b0010,
-    OP_AND = 4'b0011,
-    OP_OR = 4'b0100,
-    OP_XOR = 4'b0101,
-    OP_NOT = 4'b0110,
-    OP_SLL = 4'b0111,
-    OP_SRL = 4'b1000,
-    OP_SRA = 4'b1001,
-    OP_ROL = 4'b1010,   // Rotate Left
-    OP_SLT = 4'b1011,   // Set Less Than (signed)
-    OP_SLTU = 4'b1100   // Set Less Than Unsigned
+typedef enum logic [4:0] {
+    OP_NONE = 5'b00000,
+    OP_ADD = 5'b00001,
+    OP_SUB = 5'b00010,
+    OP_AND = 5'b00011,
+    OP_OR = 5'b00100,
+    OP_XOR = 5'b00101,
+    OP_NOT = 5'b00110,
+    OP_SLL = 5'b00111,
+    OP_SRL = 5'b01000,
+    OP_SRA = 5'b01001,
+    OP_ROL = 5'b01010,   // Rotate Left
+    OP_SLT = 5'b01011,   // Set Less Than (signed)
+    OP_SLTU = 5'b01100,  // Set Less Than Unsigned
+    OP_MIN = 5'b01101,   // Minimum (signed)
+    OP_SBSET = 5'b01110, // Set Bit
+    OP_CTZ = 5'b01111    // Count Trailing Zeros
 } alu_op_t;
 
 // Immediate type encoding
@@ -111,7 +114,12 @@ typedef enum logic [7:0] {
     INSTR_CSRRC  = 8'h2C,  // CSR读清除
     INSTR_CSRRWI = 8'h2D,  // CSR立即数读写
     INSTR_CSRRSI = 8'h2E,  // CSR立即数读置位
-    INSTR_CSRRCI = 8'h2F   // CSR立即数读清除
+    INSTR_CSRRCI = 8'h2F,  // CSR立即数读清除
+    
+    // 5. Extension Instructions（扩展指令）
+    INSTR_MIN    = 8'h30,  // 取最小值（有符号）
+    INSTR_SBSET  = 8'h31,  // 比特位置位
+    INSTR_CTZ    = 8'h32   // 计数尾部零位数
 } instr_code_t;
 
 `endif

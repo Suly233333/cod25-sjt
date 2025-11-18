@@ -21,7 +21,7 @@ module ID (
 
     // Control signals generated in ID stage
     output logic [3:0] imm_type_o,       // Immediate type (NONE/I/S/B/U/J)
-    output logic [3:0] alu_op_o,         // ALU operation
+    output logic [4:0] alu_op_o,         // ALU operation
     output logic [3:0] instr_type_o,     // Instruction type (R/I/S/B/U/J)
     output logic [7:0] instr_code_o,     // Specific instruction code (LUI, ADDI, LB, LW, SB, SW, etc.)
     output logic use_rs2_o,              // Whether instruction uses rs2
@@ -124,9 +124,17 @@ always_comb begin
                     alu_op_o = OP_AND;
                     instr_code_o = INSTR_ANDI;
                 end
-                3'b001: begin  // SLLI - Shift Left Logical Immediate
-                    alu_op_o = OP_SLL;
-                    instr_code_o = INSTR_SLLI;
+                3'b001: begin  // SLLI / CTZ - Shift Left Logical Immediate or Count Trailing Zeros
+                    if (inst_i[31:25] == 7'b0110000)
+                        begin  // CTZ - Count Trailing Zeros
+                            alu_op_o = OP_CTZ;
+                            instr_code_o = INSTR_CTZ;
+                        end
+                    else
+                        begin  // SLLI - Shift Left Logical Immediate
+                            alu_op_o = OP_SLL;
+                            instr_code_o = INSTR_SLLI;
+                        end
                 end
                 3'b101: begin  // SRLI / SRAI - Shift Right (Logical/Arithmetic) Immediate
                     if (inst_i[31:25] == 7'b0100000)
@@ -167,9 +175,17 @@ always_comb begin
                             instr_code_o = INSTR_ADD;
                         end
                 end
-                3'b001: begin  // SLL
-                    alu_op_o = OP_SLL;
-                    instr_code_o = INSTR_SLL;
+                3'b001: begin  // SLL or SBSET
+                    if (inst_i[31:25] == 7'b0101000)
+                        begin  // SBSET - Set Bit
+                            alu_op_o = OP_SBSET;
+                            instr_code_o = INSTR_SBSET;
+                        end
+                    else
+                        begin  // SLL - Shift Left Logical
+                            alu_op_o = OP_SLL;
+                            instr_code_o = INSTR_SLL;
+                        end
                 end
                 3'b010: begin  // SLT - Set Less Than (signed)
                     alu_op_o = OP_SLT;
@@ -183,14 +199,19 @@ always_comb begin
                     alu_op_o = OP_XOR;
                     instr_code_o = INSTR_XOR;
                 end
-                3'b101: begin  // SRL / SRA
+                3'b101: begin  // SRL / SRA / MIN
                     if (inst_i[31:25] == 7'b0100000)
-                        begin  // SRA
+                        begin  // SRA - Shift Right Arithmetic
                             alu_op_o = OP_SRA;
                             instr_code_o = INSTR_SRA;
                         end
+                    else if (inst_i[31:25] == 7'b0000101)
+                        begin  // MIN - Minimum (signed)
+                            alu_op_o = OP_MIN;
+                            instr_code_o = INSTR_MIN;
+                        end
                     else
-                        begin  // SRL
+                        begin  // SRL - Shift Right Logical
                             alu_op_o = OP_SRL;
                             instr_code_o = INSTR_SRL;
                         end

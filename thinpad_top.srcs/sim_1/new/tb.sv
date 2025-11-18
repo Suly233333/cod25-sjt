@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-module tb;
+module lab5_tb;
 
   wire clk_50M, clk_11M0592;
 
@@ -13,32 +13,24 @@ module tb;
   wire [7:0] dpy0;   // 数码管低位信号，包括小数点，输出 1 点亮
   wire [7:0] dpy1;   // 数码管高位信号，包括小数点，输出 1 点亮
 
-  wire txd;  // 直连串口发送端
-  wire rxd;  // 直连串口接收端
-
   wire [31:0] base_ram_data;  // BaseRAM 数据，低 8 位与 CPLD 串口控制器共享
   wire [19:0] base_ram_addr;  // BaseRAM 地址
-  wire [3:0] base_ram_be_n;   // BaseRAM 字节使能，低有效。如果不使用字节使能，请保持为 0
+  wire[3:0] base_ram_be_n;    // BaseRAM 字节使能，低有效。如果不使用字节使能，请保持为 0
   wire base_ram_ce_n;  // BaseRAM 片选，低有效
   wire base_ram_oe_n;  // BaseRAM 读使能，低有效
   wire base_ram_we_n;  // BaseRAM 写使能，低有效
 
   wire [31:0] ext_ram_data;  // ExtRAM 数据
   wire [19:0] ext_ram_addr;  // ExtRAM 地址
-  wire [3:0] ext_ram_be_n;   // ExtRAM 字节使能，低有效。如果不使用字节使能，请保持为 0
+  wire[3:0] ext_ram_be_n;    // ExtRAM 字节使能，低有效。如果不使用字节使能，请保持为 0
   wire ext_ram_ce_n;  // ExtRAM 片选，低有效
   wire ext_ram_oe_n;  // ExtRAM 读使能，低有效
   wire ext_ram_we_n;  // ExtRAM 写使能，低有效
 
-  wire [22:0] flash_a;  // Flash 地址，a0 仅在 8bit 模式有效，16bit 模式无意义
-  wire [15:0] flash_d;  // Flash 数据
-  wire flash_rp_n;   // Flash 复位信号，低有效
-  wire flash_vpen;   // Flash 写保护信号，低电平时不能擦除、烧写
-  wire flash_ce_n;   // Flash 片选信号，低有效
-  wire flash_oe_n;   // Flash 读使能信号，低有效
-  wire flash_we_n;   // Flash 写使能信号，低有效
-  wire flash_byte_n; // Flash 8bit 模式选择，低有效。在使用 flash 的 16 位模式时请设为 1
+  wire txd;  // 直连串口发送端
+  wire rxd;  // 直连串口接收端
 
+  // CPLD 串口
   wire uart_rdn;  // 读串口信号，低有效
   wire uart_wrn;  // 写串口信号，低有效
   wire uart_dataready;  // 串口数据准备好
@@ -46,33 +38,41 @@ module tb;
   wire uart_tsre;  // 数据发送完毕标志
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
-  parameter BASE_RAM_INIT_FILE = "C://Users//sjt23//Downloads//kernel.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\simple_uart_test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\tb.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\xwechat_files\\wxid_3dsbd2s4ysbp12_58d5\\msg\\file\\2025-11\\kernel-no16550.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
-  parameter FLASH_INIT_FILE = "/tmp/kernel.elf";  // Flash 初始化文件，请修改为实际的绝对路径
 
   initial begin
-//    // 在这里可以自定义测试输入序列，例如：
-//    dip_sw = 32'h2;
-//    touch_btn = 0;
-//    reset_btn = 0;
-//    push_btn = 0;
+    // 在这里可以自定义测试输入序列，例如：
+    dip_sw = 32'h2;
+    touch_btn = 0;
+    reset_btn = 0;
+    push_btn = 0;
 
-//    #100;
-//    reset_btn = 1;
-//    #100;
-//    reset_btn = 0;
-//    for (integer i = 0; i < 20; i = i + 1) begin
-//      #100;  // 等待 100ns
-//      push_btn = 1;  // 按下 push_btn 按钮
-//      #100;  // 等待 100ns
-//      push_btn = 0;  // 松开 push_btn 按钮
-//    end
-  
-//    // 模拟 PC 通过直连串口，向 FPGA 发送字符
-//    uart.pc_send_byte(8'h32); // ASCII '2'
-//    #10000;
-//    uart.pc_send_byte(8'h33); // ASCII '3'
-       
+    #100;
+    reset_btn = 1;
+    #100;
+    reset_btn = 0;
+
+    // TODO: 根据实验的操作要求，自定义下面的输入序列
+    for (integer i = 0; i < 20; i = i + 1) begin
+      #100;  // 等待 100ns
+      push_btn = 1;  // 按下 push_btn 按钮
+      #100;  // 等待 100ns
+      push_btn = 0;  // 松开 push_btn 按钮
+    end
+
+    // 模拟 PC 通过串口，向 FPGA 发送字符
+    uart.pc_send_byte(8'h32); // ASCII '2'
+    #1000;
+    uart.pc_send_byte(8'h33); // ASCII '3'
+
+    // PC 接收到数据后，会在仿真窗口中打印出数据
+
+    // 等待一段时间，结束仿真
+    #30000 $finish;
   end
 
   // 待测试用户设计
@@ -105,20 +105,22 @@ module tb;
       .ext_ram_oe_n(ext_ram_oe_n),
       .ext_ram_we_n(ext_ram_we_n),
       .ext_ram_be_n(ext_ram_be_n),
-      .flash_d(flash_d),
-      .flash_a(flash_a),
-      .flash_rp_n(flash_rp_n),
-      .flash_vpen(flash_vpen),
-      .flash_oe_n(flash_oe_n),
-      .flash_ce_n(flash_ce_n),
-      .flash_byte_n(flash_byte_n),
-      .flash_we_n(flash_we_n)
+      .flash_d(),
+      .flash_a(),
+      .flash_rp_n(),
+      .flash_vpen(),
+      .flash_oe_n(),
+      .flash_ce_n(),
+      .flash_byte_n(),
+      .flash_we_n()
   );
+
   // 时钟源
   clock osc (
       .clk_11M0592(clk_11M0592),
       .clk_50M    (clk_50M)
   );
+
   // CPLD 串口仿真模型
   cpld_model cpld (
       .clk_uart(clk_11M0592),
@@ -172,31 +174,6 @@ module tb;
       .LB_n(ext_ram_be_n[2]),
       .UB_n(ext_ram_be_n[3])
   );
-  // Flash 仿真模型
-  x28fxxxp30 #(
-      .FILENAME_MEM(FLASH_INIT_FILE)
-  ) flash (
-      .A   (flash_a[1+:22]),
-      .DQ  (flash_d),
-      .W_N (flash_we_n),      // Write Enable 
-      .G_N (flash_oe_n),      // Output Enable
-      .E_N (flash_ce_n),      // Chip Enable
-      .L_N (1'b0),            // Latch Enable
-      .K   (1'b0),            // Clock
-      .WP_N(flash_vpen),      // Write Protect
-      .RP_N(flash_rp_n),      // Reset/Power-Down
-      .VDD ('d3300),
-      .VDDQ('d3300),
-      .VPP ('d1800),
-      .Info(1'b1)
-  );
-
-  initial begin
-    wait (flash_byte_n == 1'b0);
-    $display("8-bit Flash interface is not supported in simulation!");
-    $display("Please tie flash_byte_n to high");
-    $stop;
-  end
 
   // 从文件加载 BaseRAM
   initial begin

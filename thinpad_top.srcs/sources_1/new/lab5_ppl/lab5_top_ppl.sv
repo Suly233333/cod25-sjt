@@ -307,7 +307,8 @@ logic [31:0] id_pc_o;
 logic [31:0] id_inst_o;
 logic id_rf_wen_o, id_mem_en_o;
 logic [3:0] id_imm_type_o;
-logic [3:0] id_alu_op_o, id_instr_type_o;
+logic [4:0] id_alu_op_o;
+logic [3:0] id_instr_type_o;
 logic id_use_rs2_o;
 logic [4:0] id_rf_waddr_i, id_rf_waddr_o, id_rf_raddr_a_o, id_rf_raddr_b_o;
 logic id_rf_we_i;
@@ -359,7 +360,8 @@ logic [31:0] exe_pc_i;
 logic [31:0] exe_inst_i;
 logic [31:0] exe_rf_rdata_a_i, exe_rf_rdata_b_i;
 logic [3:0] exe_imm_type_i;
-logic [3:0] exe_alu_op_i, exe_instr_type_i;
+logic [4:0] exe_alu_op_i;
+logic [3:0] exe_instr_type_i;
 logic [7:0] exe_instr_code_i;
 logic exe_use_rs2_i, exe_rf_wen_i, exe_mem_en_i;
 
@@ -407,7 +409,7 @@ logic [31:0] exe_mem_addr_o, exe_mem_data_o;
 logic exe_rf_wen_o, exe_mem_en_o;
 
 logic [31:0] exe_alu_a_o, exe_alu_b_o, exe_alu_y_o;
-logic [3:0] exe_alu_op_o;
+logic [4:0] exe_alu_op_o;
 
 EXE sys_EXE(
     .clk_i(sys_clk),
