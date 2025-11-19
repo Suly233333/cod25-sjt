@@ -439,6 +439,13 @@ EXE sys_EXE(
     .alu_a_o(exe_alu_a_o),
     .alu_b_o(exe_alu_b_o),
     .alu_op_o(exe_alu_op_o),
+    // Forwarding signals
+    .mem_rf_wen_i(mem_rf_wen_i),
+    .mem_rf_waddr_i(mem_rf_waddr_i),
+    .mem_alu_result_i(mem_alu_y_i),
+    .wb_rf_wen_i(wb_rf_wen_i),
+    .wb_rf_waddr_i(wb_rf_waddr_i),
+    .wb_alu_result_i(wb_rf_wdata_i),
     .exe_stall_o(exe_stall_o),
     .exe_flush_o(exe_flush_o),
     .rf_waddr_o(exe_rf_waddr_o),
