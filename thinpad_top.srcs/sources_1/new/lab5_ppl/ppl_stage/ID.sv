@@ -176,7 +176,7 @@ always_comb begin
                         end
                 end
                 3'b001: begin  // SLL or SBSET
-                    if (inst_i[31:25] == 7'b0101000)
+                    if (inst_i[31:25] == 7'b0010100)
                         begin  // SBSET - Set Bit
                             alu_op_o = OP_SBSET;
                             instr_code_o = INSTR_SBSET;
@@ -195,22 +195,25 @@ always_comb begin
                     alu_op_o = OP_SLTU;
                     instr_code_o = INSTR_SLTU;
                 end
-                3'b100: begin  // XOR
-                    alu_op_o = OP_XOR;
-                    instr_code_o = INSTR_XOR;
+                3'b100: begin
+                    if (inst_i[31:25] == 7'b0000000) 
+                        begin  // XOR
+                            alu_op_o = OP_XOR;
+                            instr_code_o = INSTR_XOR;
+                        end 
+                    else if (inst_i[31:25] == 7'b0000101) 
+                        begin  // MIN
+                            alu_op_o = OP_MIN;
+                            instr_code_o = INSTR_MIN;
+                        end
                 end
-                3'b101: begin  // SRL / SRA / MIN
+                3'b101: begin  // SRL / SRA
                     if (inst_i[31:25] == 7'b0100000)
                         begin  // SRA - Shift Right Arithmetic
                             alu_op_o = OP_SRA;
                             instr_code_o = INSTR_SRA;
                         end
-                    else if (inst_i[31:25] == 7'b0000101)
-                        begin  // MIN - Minimum (signed)
-                            alu_op_o = OP_MIN;
-                            instr_code_o = INSTR_MIN;
-                        end
-                    else
+                    else if (inst_i[31:25] == 7'b0000000)
                         begin  // SRL - Shift Right Logical
                             alu_op_o = OP_SRL;
                             instr_code_o = INSTR_SRL;
