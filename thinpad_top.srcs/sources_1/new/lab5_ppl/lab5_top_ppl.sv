@@ -96,15 +96,15 @@ module lab5_top_ppl (
                        // 后级电路复位信号应当由它生成（见下）
   );
 
-  logic reset_of_clk10M;
-  // 异步复位，同步释放，将 locked 信号转为后级电路的复位 reset_of_clk10M
-  always_ff @(posedge clk_10M or negedge locked) begin
-    if (~locked) reset_of_clk10M <= 1'b1;
-    else reset_of_clk10M <= 1'b0;
+  logic reset_of_clk50M;
+  // 异步复位，同步释放，将 locked 信号转为后级电路的复位 reset_of_clk50M
+  always_ff @(posedge clk_50M or negedge locked) begin
+    if (~locked) reset_of_clk50M <= 1'b1;
+    else reset_of_clk50M <= 1'b0;
   end
 
-  // always_ff @(posedge clk_10M or posedge reset_of_clk10M) begin
-  //   if (reset_of_clk10M) begin
+  // always_ff @(posedge clk_10M or posedge reset_of_clk50M) begin
+  //   if (reset_of_clk50M) begin
   //     // Your Code
   //   end else begin
   //     // Your Code
@@ -225,8 +225,8 @@ module lab5_top_ppl (
 logic sys_clk;
 logic sys_rst;
 
-assign sys_clk = clk_10M;
-assign sys_rst = reset_of_clk10M;
+assign sys_clk = clk_50M;
+assign sys_rst = reset_of_clk50M;
 
 // 本实验不使用 CPLD 串口，禁用防止总线冲突
 assign uart_rdn = 1'b1;
@@ -237,6 +237,7 @@ logic jump_i;
 logic if_stall_i, if_flush_o, if_stall_o;
 logic id_flush_o, id_stall_o;
 logic exe_flush_o, exe_stall_o;
+logic icache_flush_o;
 logic mem_stall_i, mem_flush_o, mem_stall_o;
 
 logic if_id_stall_i, if_id_bubble_i, id_exe_stall_i, id_exe_bubble_i;
@@ -268,6 +269,7 @@ IF_master #(
     .pc_jump_i(pc_jump_i),
     .jump_i(jump_i),
     .if_stall_i(if_stall_i),
+    .icache_flush_i(icache_flush_o),
 
     .pc_o(if_pc_o),
     .inst_o(if_inst_o),
@@ -450,7 +452,8 @@ EXE sys_EXE(
     .exe_flush_o(exe_flush_o),
     .rf_waddr_o(exe_rf_waddr_o),
     .jump_o(jump_i),
-    .pc_jump_o(pc_jump_i)
+    .pc_jump_o(pc_jump_i),
+    .icache_flush_o(icache_flush_o)
 );
 
 ppl_alu sys_myalu(
@@ -819,7 +822,7 @@ wb_arbiter_2 #(
   // 串口控制器模块
   // NOTE: 如果修改系统时钟频率，也需要修改此处的时钟频率参数
   uart_controller #(
-      .CLK_FREQ(10_000_000),
+      .CLK_FREQ(50_000_000),
       .BAUD    (115200)
   ) uart_controller (
       .clk_i(sys_clk),

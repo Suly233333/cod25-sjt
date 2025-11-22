@@ -52,7 +52,7 @@ always_comb begin
         if_id_stall_o = 1'b1;
         id_exe_bubble_o = 1'b1;
     end else if(if_stall_i)begin
-        if_stall_o = 1'b1;
+        // if_stall_o = 1'b1;
         // if_id_stall_o = 1'b1;
         if_id_bubble_o = 1'b1;
     end

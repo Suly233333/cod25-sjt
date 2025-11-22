@@ -337,6 +337,27 @@ always_comb begin
             instr_code_o = INSTR_JALR;
         end
 
+        // ==================== System Instructions ====================
+        7'b0001111: begin  // FENCE / FENCE.I
+            imm_type_o = IMM_TYPE_NONE;
+            instr_type_o = INSTR_TYPE_I;
+            alu_op_o = OP_NONE;
+            use_rs2_o = 1'b0;
+            mem_en_o = 1'b0;
+            rf_wen_o = 1'b0;
+            rf_raddr_a_o = 5'b0;
+            rf_raddr_b_o = 5'b0;
+            rf_waddr_o = 5'b0;
+            
+            if (inst_i[31:25] == 7'b0000001) begin
+                // FENCE.I - Instruction Fence
+                instr_code_o = INSTR_FENCE_I;
+            end else begin
+                // FENCE - Data Fence
+                instr_code_o = INSTR_FENCE;
+            end
+        end
+
         default: begin
             imm_type_o = IMM_TYPE_NONE;
             instr_type_o = INSTR_TYPE_ERR;

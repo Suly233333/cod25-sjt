@@ -39,7 +39,8 @@ module EXE(
     output logic exe_flush_o,
     output logic [4:0] rf_waddr_o,
     output logic jump_o,
-    output logic [31:0] pc_jump_o
+    output logic [31:0] pc_jump_o,
+    output logic icache_flush_o      // FENCE.I instruction flag
 
 );
 
@@ -82,20 +83,25 @@ always_comb begin
     rf_waddr_o = rf_waddr_i;
     exe_stall_o = 1'b0;
     alu_op_o = alu_op_i;
+    icache_flush_o = 1'b0;  // Default: no cache flush
 
     // compute rs1/rs2 indices from instruction
     exe_rs1 = inst_i[19:15];
     exe_rs2 = inst_i[24:20];
 
     // forwarding: priority MEM -> WB -> register file
-    if (mem_rf_wen_i && (exe_rs1 == mem_rf_waddr_i))
+    if (exe_rs1 == 5'b0)
+        exe_alu_a = '0;
+    else if (mem_rf_wen_i && (exe_rs1 == mem_rf_waddr_i))
         exe_alu_a = mem_alu_result_i;
     else if (wb_rf_wen_i && (exe_rs1 == wb_rf_waddr_i))
         exe_alu_a = wb_alu_result_i;
     else
         exe_alu_a = rf_rdata_a_i;
 
-    if (mem_rf_wen_i && (exe_rs2 == mem_rf_waddr_i))
+    if (exe_rs2 == 5'b0)
+        exe_alu_b = '0;
+    else if (mem_rf_wen_i && (exe_rs2 == mem_rf_waddr_i))
         exe_alu_b = mem_alu_result_i;
     else if (wb_rf_wen_i && (exe_rs2 == wb_rf_waddr_i))
         exe_alu_b = wb_alu_result_i;
@@ -236,6 +242,14 @@ always_comb begin
         end
 
         default: begin
+            // System instructions (FENCE, FENCE.I, etc.)
+            // For FENCE.I, we trigger cache flush and pipeline flush
+            if (instr_code_i == INSTR_FENCE_I) begin
+                icache_flush_o = 1'b1;      // Signal to flush instruction cache
+                exe_flush_o = 1'b1;         // Flush pipeline to re-fetch instructions
+                mem_en_o = 1'b0;
+                rf_wen_o = 1'b0;
+            end
             alu_a_o = 32'b0;
             alu_b_o = 32'b0;
         end

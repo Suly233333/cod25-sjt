@@ -36,9 +36,9 @@ module ppl_regfile #(
   // 读取操作 - 组合逻辑
   always_comb begin
     // 读端口A
-    rf_rdata_a = (rf_raddr_a == 5'b0) ? 32'b0 : regs[rf_raddr_a];
+    rf_rdata_a = (rf_raddr_a == 5'b0) ? 32'b0 : (rf_we && rf_raddr_a == rf_waddr) ? rf_wdata : regs[rf_raddr_a];
     // 读端口B
-    rf_rdata_b = (rf_raddr_b == 5'b0) ? 32'b0 : regs[rf_raddr_b];
+    rf_rdata_b = (rf_raddr_b == 5'b0) ? 32'b0 : (rf_we && rf_raddr_b == rf_waddr) ? rf_wdata : regs[rf_raddr_b];
   end
 
 endmodule
