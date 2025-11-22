@@ -40,7 +40,16 @@ module EXE(
     output logic [4:0] rf_waddr_o,
     output logic jump_o,
     output logic [31:0] pc_jump_o,
-    output logic icache_flush_o      // FENCE.I instruction flag
+    output logic icache_flush_o,     // FENCE.I instruction flag
+    
+    // BTB 更新输出
+    output logic btb_update_valid_o, // BTB 更新有效
+    output logic [31:0] btb_update_pc_o,     // 分支指令 PC
+    output logic btb_actual_taken_o, // 实际是否跳转
+    output logic [31:0] btb_actual_target_o, // 实际目标 PC
+    
+    // 预测失误检测输入
+    input wire pred_mispatch_i       // 来自 IF 的预测失误标志
 
 );
 
@@ -84,6 +93,12 @@ always_comb begin
     exe_stall_o = 1'b0;
     alu_op_o = alu_op_i;
     icache_flush_o = 1'b0;  // Default: no cache flush
+    
+    // BTB 更新信号默认值
+    btb_update_valid_o = 1'b0;
+    btb_update_pc_o = 32'b0;
+    btb_actual_taken_o = 1'b0;
+    btb_actual_target_o = 32'b0;
 
     // compute rs1/rs2 indices from instruction
     exe_rs1 = inst_i[19:15];
@@ -160,49 +175,96 @@ always_comb begin
             // BEQ, BNE, BLT, BGE, BLTU, BGEU
             alu_a_o = rf_rdata_a_i;
             alu_b_o = rf_rdata_b_i;
+            
+            // 总是更新 BTB (即使预测错误也要更新)
+            btb_update_valid_o = 1'b1;
+            btb_update_pc_o = pc_i;
 
             // Branch condition evaluation
             case (instr_code_i)
                 INSTR_BEQ: begin
                     if (rf_rdata_a_i == rf_rdata_b_i) begin
+                        // 分支跳转
                         jump_o = 1'b1;
                         pc_jump_o = pc_i + $signed(imm_generated);
-                        exe_flush_o = 1'b1;
+                        btb_actual_taken_o = 1'b1;
+                        btb_actual_target_o = pc_i + $signed(imm_generated);
+                        // 刷新流水线的条件改为: 预测失误或 FENCE.I
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
+                    end else begin
+                        // 分支不跳转
+                        btb_actual_taken_o = 1'b0;
+                        btb_actual_target_o = pc_i + 4;
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
                     end
                 end
                 INSTR_BNE: begin
                     if (rf_rdata_a_i != rf_rdata_b_i) begin
                         jump_o = 1'b1;
                         pc_jump_o = pc_i + $signed(imm_generated);
-                        exe_flush_o = 1'b1;
+                        btb_actual_taken_o = 1'b1;
+                        btb_actual_target_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
+                    end else begin
+                        btb_actual_taken_o = 1'b0;
+                        btb_actual_target_o = pc_i + 4;
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
                     end
                 end
                 INSTR_BLT: begin
                     if ($signed(rf_rdata_a_i) < $signed(rf_rdata_b_i)) begin
                         jump_o = 1'b1;
                         pc_jump_o = pc_i + $signed(imm_generated);
-                        exe_flush_o = 1'b1;
+                        btb_actual_taken_o = 1'b1;
+                        btb_actual_target_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
+                    end else begin
+                        btb_actual_taken_o = 1'b0;
+                        btb_actual_target_o = pc_i + 4;
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
                     end
                 end
                 INSTR_BGE: begin
                     if ($signed(rf_rdata_a_i) >= $signed(rf_rdata_b_i)) begin
                         jump_o = 1'b1;
                         pc_jump_o = pc_i + $signed(imm_generated);
-                        exe_flush_o = 1'b1;
+                        btb_actual_taken_o = 1'b1;
+                        btb_actual_target_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
+                    end else begin
+                        btb_actual_taken_o = 1'b0;
+                        btb_actual_target_o = pc_i + 4;
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
                     end
                 end
                 INSTR_BLTU: begin
+                    btb_update_valid_o = 1'b1;
+                    btb_update_pc_o = pc_i;
                     if (rf_rdata_a_i < rf_rdata_b_i) begin
                         jump_o = 1'b1;
                         pc_jump_o = pc_i + $signed(imm_generated);
-                        exe_flush_o = 1'b1;
+                        btb_actual_taken_o = 1'b1;
+                        btb_actual_target_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
+                    end else begin
+                        btb_actual_taken_o = 1'b0;
+                        btb_actual_target_o = pc_i + 4;
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
                     end
                 end
                 INSTR_BGEU: begin
+                    btb_update_valid_o = 1'b1;
+                    btb_update_pc_o = pc_i;
                     if (rf_rdata_a_i >= rf_rdata_b_i) begin
                         jump_o = 1'b1;
                         pc_jump_o = pc_i + $signed(imm_generated);
-                        exe_flush_o = 1'b1;
+                        btb_actual_taken_o = 1'b1;
+                        btb_actual_target_o = pc_i + $signed(imm_generated);
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
+                    end else begin
+                        btb_actual_taken_o = 1'b0;
+                        btb_actual_target_o = pc_i + 4;
+                        exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
                     end
                 end
                 default: begin

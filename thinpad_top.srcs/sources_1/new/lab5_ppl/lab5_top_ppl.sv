@@ -259,6 +259,13 @@ logic        valid;
 logic [31:0] if_pc_i, if_pc_o, pc_jump_i;
 logic [31:0] if_inst_o;
 
+// BTB signals
+logic btb_update_valid;
+logic [31:0] btb_update_pc;
+logic btb_actual_taken;
+logic [31:0] btb_actual_target;
+logic pred_mismatch;
+
 IF_master #(
     .ADDR_WIDTH(32),
     .DATA_WIDTH(32)
@@ -284,7 +291,14 @@ IF_master #(
     .wb_dat_i(if_wb_dat_i),
     .wb_sel_o(if_wb_sel_o),
     .wb_we_o(if_wb_we_o),
-    .valid(valid)
+    .valid(valid),
+
+    .btb_flush_i(icache_flush_o),
+    .btb_update_valid_i(btb_update_valid),
+    .btb_update_pc_i(btb_update_pc),
+    .btb_actual_taken_i(btb_actual_taken),
+    .btb_actual_target_i(btb_actual_target),
+    .pred_mispatch_o(pred_mismatch)
 );
 
 logic [31:0] id_pc_i;
@@ -453,7 +467,13 @@ EXE sys_EXE(
     .rf_waddr_o(exe_rf_waddr_o),
     .jump_o(jump_i),
     .pc_jump_o(pc_jump_i),
-    .icache_flush_o(icache_flush_o)
+    .icache_flush_o(icache_flush_o),
+    // BTB update signals
+    .pred_mispatch_i(pred_mismatch),
+    .btb_update_valid_o(btb_update_valid),
+    .btb_update_pc_o(btb_update_pc),
+    .btb_actual_taken_o(btb_actual_taken),
+    .btb_actual_target_o(btb_actual_target)
 );
 
 ppl_alu sys_myalu(

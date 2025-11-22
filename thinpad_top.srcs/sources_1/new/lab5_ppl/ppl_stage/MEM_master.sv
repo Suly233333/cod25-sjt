@@ -41,8 +41,7 @@ module MEM_master #(
 
 typedef enum logic [1:0]{
     ST_IDLE = 0,
-    ST_LOAD = 1,
-    ST_STORE = 2
+    ST_LOAD = 1
 } state_t;
 
 state_t state;
@@ -52,6 +51,11 @@ logic [4:0] my_rf_waddr_o;
 logic my_rf_wen_o;
 
 logic [7:0] instr_code_reg;
+
+logic store_buf_valid;
+logic [ADDR_WIDTH-1:0] store_buf_addr;
+logic [DATA_WIDTH-1:0] store_buf_data;
+logic [DATA_WIDTH/8-1:0] store_buf_sel;
 
 always_ff @ (posedge clk_i) begin
     if(rst_i)begin
@@ -73,10 +77,21 @@ always_ff @ (posedge clk_i) begin
         my_inst_o <= 32'b0;
         my_rf_wen_o <= 1'b0;
         my_rf_waddr_o <= 5'b0;
-        instr_code_reg <= 4'b0;
+        instr_code_reg <= 8'b0;
+        store_buf_valid <= 1'b0;
+        store_buf_addr <= {ADDR_WIDTH{1'b0}};
+        store_buf_data <= {DATA_WIDTH{1'b0}};
+        store_buf_sel <= {DATA_WIDTH/8{1'b0}};
     end else begin
             if(state == ST_IDLE)begin
                 instr_code_reg <= instr_code_i;
+                wb_cyc_o <= 0;
+                wb_stb_o <= 0;
+                wb_we_o <= 0;
+                wb_addr_o <= 0;
+                wb_data_o <= 0;
+                wb_sel_o <= 4'b0000;
+                mem_stall_o <= (store_buf_valid && mem_en_i) ? 1'b1 : 1'b0;
                 if(!stall_i && mem_en_i)begin
                     case(instr_type_i)
                         INSTR_TYPE_I: begin
@@ -123,36 +138,33 @@ always_ff @ (posedge clk_i) begin
                             rf_wen_o <= 0;
                             rf_waddr_o <= rf_waddr_i;
                             rf_wdata_o <= 32'b0;
-                            wb_cyc_o <= 1;
-                            wb_stb_o <= 1;
-                            wb_we_o <= 1;
-                            wb_addr_o <= mem_addr_i;
-                            case (instr_code_i)
-                                INSTR_SB: begin
-                                    case (mem_addr_i[1:0])
-                                        2'b00: begin wb_sel_o <= 4'b0001; wb_data_o <= mem_data_i; end
-                                        2'b01: begin wb_sel_o <= 4'b0010; wb_data_o <= mem_data_i << 8; end
-                                        2'b10: begin wb_sel_o <= 4'b0100; wb_data_o <= mem_data_i << 16; end
-                                        2'b11: begin wb_sel_o <= 4'b1000; wb_data_o <= mem_data_i << 24; end
-                                        default: begin wb_sel_o <= 4'b0000; wb_data_o <= 32'b0; end
-                                    endcase
-                                end
-                                INSTR_SH: begin
-                                    case (mem_addr_i[1:0])
-                                        2'b00: begin wb_sel_o <= 4'b0011; wb_data_o <= mem_data_i; end
-                                        2'b10: begin wb_sel_o <= 4'b1100; wb_data_o <= mem_data_i << 16; end
-                                        default: begin wb_sel_o <= 4'b0000; wb_data_o <= 32'b0; end
-                                    endcase
-                                end
-                                INSTR_SW: begin
-                                    wb_sel_o <= 4'b1111; wb_data_o <= mem_data_i;
-                                end
-                                default: begin
-                                    wb_sel_o <= 4'b0000; wb_data_o <= 32'b0;
-                                end
-                            endcase
-                            state <= ST_STORE;
-                            mem_stall_o <= 1'b1;
+                            store_buf_sel <= 4'b0000;
+                            store_buf_data <= 32'b0;
+                            if(!store_buf_valid) begin
+                                store_buf_valid <= 1'b1;
+                                store_buf_addr <= mem_addr_i;
+                                case (instr_code_i)
+                                    INSTR_SB: begin
+                                        store_buf_sel <= (4'b0001 << mem_addr_i[1:0]);
+                                        store_buf_data <= mem_data_i << (mem_addr_i[1:0] * 8);
+                                    end
+                                    INSTR_SH: begin
+                                        case (mem_addr_i[1:0])
+                                            2'b00: begin store_buf_sel <= 4'b0011; store_buf_data <= mem_data_i; end
+                                            2'b10: begin store_buf_sel <= 4'b1100; store_buf_data <= mem_data_i << 16; end
+                                            default: begin store_buf_sel <= 4'b0000; store_buf_data <= 32'b0; end
+                                        endcase
+                                    end
+                                    INSTR_SW: begin
+                                        store_buf_sel <= 4'b1111;
+                                        store_buf_data <= mem_data_i;
+                                    end
+                                    default: begin
+                                        store_buf_sel <= 4'b0000;
+                                        store_buf_data <= 32'b0;
+                                    end
+                                endcase
+                            end
                             mem_flush_o <= 1'b0;
                             my_pc_o <= pc_i;
                             my_inst_o <= inst_i;
@@ -192,6 +204,14 @@ always_ff @ (posedge clk_i) begin
                     end else begin
                         rf_wdata_o <= alu_y_i;
                     end
+                end
+                if(store_buf_valid) begin
+                    wb_cyc_o <= 1;
+                    wb_stb_o <= 1;
+                    wb_we_o <= 1;
+                    wb_addr_o <= store_buf_addr;
+                    wb_data_o <= store_buf_data;
+                    wb_sel_o <= store_buf_sel;
                 end
             end else begin
                 case(state)
@@ -240,22 +260,13 @@ always_ff @ (posedge clk_i) begin
                             mem_flush_o <= 1'b0;
                         end
                     end
-                    ST_STORE: begin
-                        if(wb_ack_i == 1)begin
-                            pc_o <= my_pc_o;
-                            inst_o <= my_inst_o;
-                            rf_wen_o <= my_rf_wen_o;
-                            rf_waddr_o <= my_rf_waddr_o;
-                            rf_wdata_o <= 32'b0;
-                            state <= ST_IDLE;
-                            wb_cyc_o <= 0;
-                            wb_stb_o <= 0;
-                            wb_we_o <= 0;
-                            mem_stall_o <= 1'b0;
-                            mem_flush_o <= 1'b0;
-                        end 
-                    end
                 endcase
+            end
+            if((store_buf_valid && state != ST_LOAD && wb_ack_i) || mem_flush_o) begin
+                store_buf_valid <= 1'b0;
+                store_buf_addr <= {ADDR_WIDTH{1'b0}};
+                store_buf_data <= {DATA_WIDTH{1'b0}};
+                store_buf_sel <= {DATA_WIDTH/8{1'b0}};
             end
     end
 end

@@ -9,11 +9,19 @@ module IF_master #(
     input wire jump_i,
     input wire if_stall_i,
     input wire icache_flush_i,      // FENCE.I cache flush signal
+    input wire btb_flush_i,         // BTB flush signal
+
+    // BTB 更新端口
+    input wire btb_update_valid_i,  // BTB 更新有效
+    input wire [31:0] btb_update_pc_i,      // 分支指令 PC
+    input wire btb_actual_taken_i,  // 实际是否跳转
+    input wire [31:0] btb_actual_target_i,  // 实际目标 PC
 
     output logic [31:0] pc_o,
     output logic [31:0] inst_o,
     output logic if_stall_o,
     output logic if_flush_o,
+    output logic pred_mispatch_o,   // 预测失误标志
 
     output reg wb_cyc_o,
     output reg wb_stb_o,
@@ -39,6 +47,12 @@ logic [31:0] pc_current;
 logic [31:0] cache_inst;
 logic cache_hit;
 
+// BTB prediction signals
+logic btb_pred_taken;
+logic [31:0] btb_pred_target;
+logic [31:0] btb_pred_pc;  // PC used for BTB query
+logic [31:0] last_fetched_pc;  // Last PC we fetched for prediction tracking
+
 // ICache instance
 icache icache_inst (
     .clk_i(clk_i),
@@ -50,6 +64,20 @@ icache icache_inst (
     .fill_addr_i(wb_adr_o),
     .fill_data_i(wb_dat_i),
     .fill_valid_i(wb_ack_i)
+);
+
+// BTB instance
+btb btb_inst (
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .pc_i(btb_pred_pc),
+    .pred_taken_o(btb_pred_taken),
+    .pred_target_o(btb_pred_target),
+    .update_valid_i(btb_update_valid_i),
+    .update_pc_i(btb_update_pc_i),
+    .actual_taken_i(btb_actual_taken_i),
+    .actual_target_i(btb_actual_target_i),
+    .flush_i(btb_flush_i)
 );
 
 state_t state;
@@ -65,26 +93,50 @@ always_ff @ (posedge clk_i) begin
         state <= ST_IDLE;
         wb_cyc_o <= 0;
         wb_stb_o <= 0;
-        wb_sel_o <= 4'b0000;
+        wb_sel_o <= 4'b1111;
         wb_dat_o <= 32'b0;
         branch_reg <= 0;
         pc_branch_reg <= 32'h8000_0000;
         wb_adr_o <= 32'b0;
         wb_we_o <= 1'b0;
         valid <= 1'b0;
+        pred_mispatch_o <= 1'b0;
+        last_fetched_pc <= 32'h8000_0000;
 
     end else begin
         case(state)
             ST_IDLE: begin
                 if(!if_stall_i)begin
                     logic [31:0] next_pc;
-                    next_pc = branch_reg ? pc_branch_reg : jump_i ? pc_jump_i : pc_next;
                     
-                    // Try to read from cache for next_pc
-                    // But we can't check cache_hit directly here since pc_i is combinational
-                    // We need to latch next_pc first, then check cache on it
+                    // Priority: jump (from EXE) > BTB prediction > sequential
+                    // 优先级: 从EXE的跳转 > BTB预测 > 顺序PC
+                    if (jump_i) begin
+                        // 来自 EXE 的跳转有最高优先级
+                        next_pc = pc_jump_i;
+                        pred_mispatch_o = 1'b0;  // EXE 已确定，无预测失误
+                    end else if (branch_reg) begin
+                        // 来自前一周期的分支
+                        next_pc = pc_branch_reg;
+                        pred_mispatch_o = 1'b0;
+                    end else begin
+                        // 查询 BTB 获取预测
+                        btb_pred_pc = pc_next;
+                        
+                        if (btb_pred_taken) begin
+                            // BTB 预测跳转
+                            next_pc = btb_pred_target;
+                            pred_mispatch_o = 1'b0;  // 预测成功（暂时）
+                        end else begin
+                            // BTB 预测不跳转或未命中，顺序执行
+                            next_pc = pc_next;
+                            pred_mispatch_o = 1'b0;
+                        end
+                    end
+                    
                     pc_current <= next_pc;
-                    pc_next <= branch_reg ? pc_branch_reg + 4 : jump_i ? pc_jump_i + 4 : pc_next + 4;
+                    pc_next <= next_pc + 4;
+                    last_fetched_pc <= next_pc;
                     branch_reg <= 1'b0;
                     
                     // Go to ST_READ to check if cache_hit and fetch if miss
@@ -95,8 +147,20 @@ always_ff @ (posedge clk_i) begin
             end
             ST_READ: begin
                 if(jump_i)begin
+                    // 来自 EXE 的确定跳转
                     branch_reg <= jump_i;
                     pc_branch_reg <= pc_jump_i;
+                    
+                    // 检查是否与之前的 BTB 预测冲突
+                    if (btb_pred_taken && last_fetched_pc != pc_jump_i) begin
+                        // BTB 预测失误，需要流水线刷新
+                        pred_mispatch_o <= 1'b1;
+                    end else if (!btb_pred_taken && last_fetched_pc + 4 != pc_jump_i) begin
+                        // BTB 预测不跳转但实际跳转了（误预测）
+                        pred_mispatch_o <= 1'b1;
+                    end else begin
+                        pred_mispatch_o <= 1'b0;
+                    end
                 end
                 
                 // Now we can check cache_hit on the current pc_current
@@ -111,13 +175,11 @@ always_ff @ (posedge clk_i) begin
                              (branch_reg && pc_current != pc_branch_reg) ? 1'b0 : 1'b1;
                     wb_cyc_o <= 0;
                     wb_stb_o <= 0;
-                    wb_we_o <= 0;
                 end else if(wb_ack_i == 1)begin
                     // Cache miss and Wishbone data received
                     // Cache will automatically store this via fill port
                     wb_cyc_o <= 0;
                     wb_stb_o <= 0;
-                    wb_we_o <= 0;
                     state <= ST_IDLE;
                     if_stall_o <= 0;
                     if_flush_o <= 0;
@@ -129,8 +191,6 @@ always_ff @ (posedge clk_i) begin
                     // Cache miss and need to initiate Wishbone read
                     wb_cyc_o <= 1;
                     wb_stb_o <= 1;
-                    wb_we_o <= 0;
-                    wb_sel_o <= 4'b1111;
                 end
             end
         endcase     

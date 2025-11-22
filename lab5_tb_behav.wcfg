@@ -5,22 +5,22 @@
    <db_ref_list>
       <db_ref path="lab5_tb_behav.wdb" id="1">
          <top_modules>
-            <top_module name="\$unit_reg_file_sv_3184854559 " />
+            <top_module name="\$unit_reg_file_sv_1767482725 " />
             <top_module name="glbl" />
             <top_module name="lab5_tb" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="7,250.000 ns"></ZoomStartTime>
-      <ZoomEndTime time="8,191.001 ns"></ZoomEndTime>
-      <Cursor1Time time="7,519.000 ns"></Cursor1Time>
+      <ZoomStartTime time="207,150.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="208,401.001 ns"></ZoomEndTime>
+      <Cursor1Time time="207,909.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="217"></NameColumnWidth>
+      <NameColumnWidth column_width="211"></NameColumnWidth>
       <ValueColumnWidth column_width="90"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="125" />
+   <WVObjectSize size="133" />
    <wvobject fp_name="/lab5_tb/dut/sys_clk" type="logic">
       <obj_property name="ElementShortName">sys_clk</obj_property>
       <obj_property name="ObjectShortName">sys_clk</obj_property>
@@ -60,6 +60,38 @@
    <wvobject fp_name="/lab5_tb/dut/sys_IF_master/pc_next" type="array">
       <obj_property name="ElementShortName">pc_next[31:0]</obj_property>
       <obj_property name="ObjectShortName">pc_next[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_flush_i" type="logic">
+      <obj_property name="ElementShortName">btb_flush_i</obj_property>
+      <obj_property name="ObjectShortName">btb_flush_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_update_valid_i" type="logic">
+      <obj_property name="ElementShortName">btb_update_valid_i</obj_property>
+      <obj_property name="ObjectShortName">btb_update_valid_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_update_pc_i" type="array">
+      <obj_property name="ElementShortName">btb_update_pc_i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">btb_update_pc_i[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_actual_taken_i" type="logic">
+      <obj_property name="ElementShortName">btb_actual_taken_i</obj_property>
+      <obj_property name="ObjectShortName">btb_actual_taken_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_actual_target_i" type="array">
+      <obj_property name="ElementShortName">btb_actual_target_i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">btb_actual_target_i[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_pred_taken" type="logic">
+      <obj_property name="ElementShortName">btb_pred_taken</obj_property>
+      <obj_property name="ObjectShortName">btb_pred_taken</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_pred_target" type="array">
+      <obj_property name="ElementShortName">btb_pred_target[31:0]</obj_property>
+      <obj_property name="ObjectShortName">btb_pred_target[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_pred_pc" type="array">
+      <obj_property name="ElementShortName">btb_pred_pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">btb_pred_pc[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/if_wb_cyc_o" type="logic">
       <obj_property name="ElementShortName">if_wb_cyc_o</obj_property>
