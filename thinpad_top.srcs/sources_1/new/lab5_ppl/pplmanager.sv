@@ -38,7 +38,7 @@ always_comb begin
 
     if(mem_stall_i)begin
         exe_mem_stall_o = 1'b1;
-        mem_stall_o = 1'b1;
+        // mem_stall_o = 1'b1;
         mem_wb_stall_o = 1'b1;
         if_stall_o = 1'b1;
         if_id_stall_o = 1'b1;

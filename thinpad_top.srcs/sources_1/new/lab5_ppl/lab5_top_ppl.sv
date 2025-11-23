@@ -264,7 +264,10 @@ logic btb_update_valid;
 logic [31:0] btb_update_pc;
 logic btb_actual_taken;
 logic [31:0] btb_actual_target;
-logic pred_mismatch;
+// pred_jump is passed through pipeline registers: IF -> ID -> EXE
+logic if_pred_jump;
+logic id_pred_jump;
+logic exe_pred_jump;
 
 IF_master #(
     .ADDR_WIDTH(32),
@@ -298,7 +301,7 @@ IF_master #(
     .btb_update_pc_i(btb_update_pc),
     .btb_actual_taken_i(btb_actual_taken),
     .btb_actual_target_i(btb_actual_target),
-    .pred_mispatch_o(pred_mismatch)
+    .pred_jump_o(if_pred_jump)
 );
 
 logic [31:0] id_pc_i;
@@ -310,10 +313,12 @@ if_id sys_if_id(
 
     .pc_i(if_pc_o),
     .inst_i(if_inst_o),
+    .pred_jump_i(if_pred_jump),
     .valid(valid),
 
     .pc_o(id_pc_i),
     .inst_o(id_inst_i),
+    .pred_jump_o(id_pred_jump),
 
     .stall_i(if_id_stall_i),
     .bubble_i(if_id_bubble_i)
@@ -387,6 +392,7 @@ id_ex sys_id_ex(
 
     .stall_i(id_exe_stall_i),
     .bubble_i(id_exe_bubble_i),
+    .pred_jump_i(id_pred_jump),
 
     .pc_i(id_pc_o),
     .inst_i(id_inst_o),
@@ -413,6 +419,8 @@ id_ex sys_id_ex(
     .use_rs2_o(exe_use_rs2_i),
     .rf_wen_o(exe_rf_wen_i),
     .mem_en_o(exe_mem_en_i)
+    ,
+    .pred_jump_o(exe_pred_jump)
 );
 
 logic [31:0] exe_pc_o;
@@ -469,7 +477,7 @@ EXE sys_EXE(
     .pc_jump_o(pc_jump_i),
     .icache_flush_o(icache_flush_o),
     // BTB update signals
-    .pred_mispatch_i(pred_mismatch),
+    .pred_jump_i(exe_pred_jump),
     .btb_update_valid_o(btb_update_valid),
     .btb_update_pc_o(btb_update_pc),
     .btb_actual_taken_o(btb_actual_taken),

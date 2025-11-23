@@ -125,12 +125,12 @@ logic pred_mismatch;         // 1-bit  - Prediction mismatch flag
 .btb_update_pc_i(btb_update_pc),        // From EXE
 .btb_actual_taken_i(btb_actual_taken),  // From EXE
 .btb_actual_target_i(btb_actual_target),// From EXE
-.pred_mispatch_o(pred_mismatch)         // To EXE flush
+.pred_jump_o(pred_mismatch)         // To EXE flush
 ```
 
 **EXE Instantiation** (transmits):
 ```systemverilog
-.pred_mispatch_i(pred_mismatch),        // From IF mismatch detection
+.pred_jump_i(pred_mismatch),        // From IF mismatch detection
 .btb_update_valid_o(btb_update_valid),  // To BTB query
 .btb_update_pc_o(btb_update_pc),        // To BTB update
 .btb_actual_taken_o(btb_actual_taken),  // To BTB saturation counter

@@ -369,10 +369,10 @@ always_comb begin
     endcase
 
     // Data hazard detection
-    id_stall_o = (exe_rf_waddr_i && (rs1 == exe_rf_waddr_i || (use_rs2_o && rs2 == exe_rf_waddr_i)))? 1'b1 :
-                (mem_rf_waddr_i && (rs1 == mem_rf_waddr_i || (use_rs2_o && rs2 == mem_rf_waddr_i)))? 1'b1 :
-                (wb_rf_waddr_i && (rs1 == wb_rf_waddr_i || (use_rs2_o && rs2 == wb_rf_waddr_i)))? 1'b1 :
-                (mem_rf_waddr_o && (rs1 == mem_rf_waddr_o || (use_rs2_o && rs2 == mem_rf_waddr_o)))? 1'b1 : 1'b0;
+    // id_stall_o = (exe_rf_waddr_i && (rs1 == exe_rf_waddr_i || (use_rs2_o && rs2 == exe_rf_waddr_i)))? 1'b1 :
+    //             (mem_rf_waddr_i && (rs1 == mem_rf_waddr_i || (use_rs2_o && rs2 == mem_rf_waddr_i)))? 1'b1 :
+    //             (wb_rf_waddr_i && (rs1 == wb_rf_waddr_i || (use_rs2_o && rs2 == wb_rf_waddr_i)))? 1'b1 :
+    //             (mem_rf_waddr_o && (rs1 == mem_rf_waddr_o || (use_rs2_o && rs2 == mem_rf_waddr_o)))? 1'b1 : 1'b0;
 
     id_flush_o = 1'b0;
 end

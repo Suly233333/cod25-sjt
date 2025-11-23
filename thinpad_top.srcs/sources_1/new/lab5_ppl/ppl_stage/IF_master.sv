@@ -21,7 +21,7 @@ module IF_master #(
     output logic [31:0] inst_o,
     output logic if_stall_o,
     output logic if_flush_o,
-    output logic pred_mispatch_o,   // 预测失误标志
+    output logic pred_jump_o,   // 预测跳转标志
 
     output reg wb_cyc_o,
     output reg wb_stb_o,
@@ -71,7 +71,7 @@ btb btb_inst (
     .clk_i(clk_i),
     .rst_i(rst_i),
     .pc_i(btb_pred_pc),
-    .pred_taken_o(btb_pred_taken),
+    .pred_taken_o(pred_jump_o),
     .pred_target_o(btb_pred_target),
     .update_valid_i(btb_update_valid_i),
     .update_pc_i(btb_update_pc_i),
@@ -93,14 +93,13 @@ always_ff @ (posedge clk_i) begin
         state <= ST_IDLE;
         wb_cyc_o <= 0;
         wb_stb_o <= 0;
-        wb_sel_o <= 4'b1111;
+        wb_sel_o <= 4'b0000;
         wb_dat_o <= 32'b0;
         branch_reg <= 0;
         pc_branch_reg <= 32'h8000_0000;
         wb_adr_o <= 32'b0;
         wb_we_o <= 1'b0;
         valid <= 1'b0;
-        pred_mispatch_o <= 1'b0;
         last_fetched_pc <= 32'h8000_0000;
 
     end else begin
@@ -114,23 +113,16 @@ always_ff @ (posedge clk_i) begin
                     if (jump_i) begin
                         // 来自 EXE 的跳转有最高优先级
                         next_pc = pc_jump_i;
-                        pred_mispatch_o = 1'b0;  // EXE 已确定，无预测失误
                     end else if (branch_reg) begin
                         // 来自前一周期的分支
                         next_pc = pc_branch_reg;
-                        pred_mispatch_o = 1'b0;
                     end else begin
-                        // 查询 BTB 获取预测
-                        btb_pred_pc = pc_next;
-                        
-                        if (btb_pred_taken) begin
+                        if (pred_jump_o) begin
                             // BTB 预测跳转
                             next_pc = btb_pred_target;
-                            pred_mispatch_o = 1'b0;  // 预测成功（暂时）
                         end else begin
                             // BTB 预测不跳转或未命中，顺序执行
                             next_pc = pc_next;
-                            pred_mispatch_o = 1'b0;
                         end
                     end
                     
@@ -150,17 +142,7 @@ always_ff @ (posedge clk_i) begin
                     // 来自 EXE 的确定跳转
                     branch_reg <= jump_i;
                     pc_branch_reg <= pc_jump_i;
-                    
-                    // 检查是否与之前的 BTB 预测冲突
-                    if (btb_pred_taken && last_fetched_pc != pc_jump_i) begin
-                        // BTB 预测失误，需要流水线刷新
-                        pred_mispatch_o <= 1'b1;
-                    end else if (!btb_pred_taken && last_fetched_pc + 4 != pc_jump_i) begin
-                        // BTB 预测不跳转但实际跳转了（误预测）
-                        pred_mispatch_o <= 1'b1;
-                    end else begin
-                        pred_mispatch_o <= 1'b0;
-                    end
+                    btb_pred_pc <= pc_jump_i;
                 end
                 
                 // Now we can check cache_hit on the current pc_current
@@ -171,26 +153,32 @@ always_ff @ (posedge clk_i) begin
                     if_flush_o <= 0;
                     pc_o <= pc_current;
                     inst_o <= cache_inst;
+                    btb_pred_pc <= pc_current;
                     valid <= (jump_i && pc_current != pc_jump_i) ? 1'b0 : 
                              (branch_reg && pc_current != pc_branch_reg) ? 1'b0 : 1'b1;
                     wb_cyc_o <= 0;
                     wb_stb_o <= 0;
+                    wb_we_o <= 0;
                 end else if(wb_ack_i == 1)begin
                     // Cache miss and Wishbone data received
                     // Cache will automatically store this via fill port
                     wb_cyc_o <= 0;
                     wb_stb_o <= 0;
+                    wb_we_o <= 0;
                     state <= ST_IDLE;
                     if_stall_o <= 0;
                     if_flush_o <= 0;
                     pc_o <= pc_current;
                     inst_o <= wb_dat_i;
+                    btb_pred_pc <= pc_current;
                     valid <= (jump_i && pc_current != pc_jump_i) ? 1'b0 : 
                              (branch_reg && pc_current != pc_branch_reg) ? 1'b0 : 1'b1;
                 end else if(!wb_cyc_o) begin
                     // Cache miss and need to initiate Wishbone read
                     wb_cyc_o <= 1;
                     wb_stb_o <= 1;
+                    wb_we_o <= 0;
+                    wb_sel_o <= 4'b1111;
                 end
             end
         endcase     

@@ -98,20 +98,20 @@ end
 
 **Mismatch Detection**:
 - Compare last fetched PC with actual jump PC from EXE
-- If mismatch: Set `pred_mispatch_o = 1'b1`
+- If mismatch: Set `pred_jump_o = 1'b1`
 
 ```systemverilog
 if (btb_pred_taken && last_fetched_pc != pc_jump_i) begin
-    pred_mispatch_o = 1'b1;  // Predicted taken but wrong target
+    pred_jump_o = 1'b1;  // Predicted taken but wrong target
 end else if (!btb_pred_taken && (last_fetched_pc + 4) != pc_jump_i) begin
-    pred_mispatch_o = 1'b1;  // Predicted not-taken but actually jumped
+    pred_jump_o = 1'b1;  // Predicted not-taken but actually jumped
 end
 ```
 
 ### EXE Stage (EXE)
 **Conditional Flush**:
 ```systemverilog
-exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
+exe_flush_o = pred_jump_i ? 1'b1 : 1'b0;
 ```
 - Only flush IF/ID stages on prediction mismatch
 - Correct predictions: No pipeline flush (throughput improvement)
@@ -128,7 +128,7 @@ exe_flush_o = pred_mispatch_i ? 1'b1 : 1'b0;
 .btb_update_pc_i(btb_update_pc),                 // From EXE
 .btb_actual_taken_i(btb_actual_taken),           // From EXE
 .btb_actual_target_i(btb_actual_target),         // From EXE
-.pred_mispatch_o(pred_mismatch)                  // To EXE flush control
+.pred_jump_o(pred_mismatch)                  // To EXE flush control
 ```
 
 ## Performance Impact

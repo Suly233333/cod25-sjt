@@ -4,10 +4,12 @@ module if_id (
 
     input wire [31:0] pc_i,
     input wire [31:0] inst_i,
+    input wire pred_jump_i,
     input wire valid,
 
     output logic [31:0] pc_o,
     output logic [31:0] inst_o,
+    output logic pred_jump_o,
 
     input wire stall_i,
     input wire bubble_i
@@ -19,16 +21,19 @@ always_ff @(posedge clk_i) begin
         //reset logics
         pc_o <= 32'h8000_0000;
         inst_o <= 32'b0;
+        pred_jump_o <= 1'b0;
     end else if(stall_i) begin
         //do nothing
     end else if(bubble_i || !valid) begin
         //change regs to bubble
         pc_o <= 32'b0;
         inst_o <= 32'h00000013;
+        pred_jump_o <= 1'b0;
     end else begin
         //change regs to input
         pc_o <= pc_i;
         inst_o <= inst_i;
+        pred_jump_o <= pred_jump_i;
     end
 end
 

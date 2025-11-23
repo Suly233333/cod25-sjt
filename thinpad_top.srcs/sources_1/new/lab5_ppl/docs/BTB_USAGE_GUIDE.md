@@ -113,16 +113,16 @@ $monitor("BTB PC=%h taken=%b counter=%b",
 
 ### Issue 2: Mispredictions Not Triggering Flush
 **Symptom**: Incorrect instructions fetch but pipeline doesn't flush
-**Cause**: `pred_mispatch_o` not properly generated or connected
+**Cause**: `pred_jump_o` not properly generated or connected
 **Fix**: Verify in IF_master:
 ```systemverilog
 // Mismatch detection
 if (btb_pred_taken && last_fetched_pc != pc_jump_i) begin
-    pred_mispatch_o = 1'b1;
+    pred_jump_o = 1'b1;
 end else if (!btb_pred_taken && (last_fetched_pc + 4) != pc_jump_i) begin
-    pred_mispatch_o = 1'b1;
+    pred_jump_o = 1'b1;
 end else begin
-    pred_mispatch_o = 1'b0;
+    pred_jump_o = 1'b0;
 end
 ```
 
