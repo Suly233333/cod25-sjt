@@ -65,7 +65,7 @@ always_comb begin
         
     // Memory Stall Logic
     // 这里代码如此狗屎是因为我做了个store的缓存机制，即第一个store不会立刻暂停整个流水线
-    if (wb_we_o && mem_en_i && state == ST_WAIT_ACK) // STORE
+    if (wb_we_o && (mem_en_i || state == ST_WAIT_ACK)) // STORE
         mem_stall_o = 1'b1;
     else if (instr_type_i == INSTR_TYPE_I && mem_en_i && !wb_we_o && (!ack_reg || we_reg)) // LOAD
         mem_stall_o = 1'b1;
