@@ -44,6 +44,7 @@ typedef enum logic {
     ST_WAIT_ACK
 } state_t;
 
+logic ack_reg, we_reg;
 state_t state;
 
 // Combinational Logic for Pipeline Outputs
@@ -64,52 +65,50 @@ always_comb begin
         
     // Memory Stall Logic
     // 这里代码如此狗屎是因为我做了个store的缓存机制，即第一个store不会立刻暂停整个流水线
-    if (wb_we_o && mem_en_i && !wb_ack_i && state == ST_WAIT_ACK)
+    if (wb_we_o && mem_en_i && state == ST_WAIT_ACK) // STORE
         mem_stall_o = 1'b1;
-    else if (instr_type_i == INSTR_TYPE_I && ((!wb_ack_i && state == ST_WAIT_ACK) || (mem_en_i && state == ST_IDLE)))
+    else if (instr_type_i == INSTR_TYPE_I && mem_en_i && !wb_we_o && (!ack_reg || we_reg)) // LOAD
         mem_stall_o = 1'b1;
     else
         mem_stall_o = 1'b0;
 
     if (instr_type_i == INSTR_TYPE_I) begin // LOAD
         rf_wen_o = 1'b1; // Load writes to RF
-        if (state == ST_WAIT_ACK) begin
-            if (wb_ack_i && !wb_we_o) begin // ACK for Read
-                // Data processing
-                case (instr_code_i)
-                    INSTR_LW: rf_wdata_o = wb_data_i;
-                    INSTR_LB: begin
+        if (state == ST_WAIT_ACK && wb_ack_i && !wb_we_o || !we_reg && ack_reg) begin // ACK for Read
+            // Data processing
+            case (instr_code_i)
+                INSTR_LW: rf_wdata_o = wb_data_i;
+                INSTR_LB: begin
+                    case (mem_addr_i[1:0])
+                        2'b00: rf_wdata_o = {{24{wb_data_i[7]}}, wb_data_i[7:0]};
+                        2'b01: rf_wdata_o = {{24{wb_data_i[15]}}, wb_data_i[15:8]};
+                        2'b10: rf_wdata_o = {{24{wb_data_i[23]}}, wb_data_i[23:16]};
+                        2'b11: rf_wdata_o = {{24{wb_data_i[31]}}, wb_data_i[31:24]};
+                    endcase
+                end
+                INSTR_LBU: begin
                         case (mem_addr_i[1:0])
-                            2'b00: rf_wdata_o = {{24{wb_data_i[7]}}, wb_data_i[7:0]};
-                            2'b01: rf_wdata_o = {{24{wb_data_i[15]}}, wb_data_i[15:8]};
-                            2'b10: rf_wdata_o = {{24{wb_data_i[23]}}, wb_data_i[23:16]};
-                            2'b11: rf_wdata_o = {{24{wb_data_i[31]}}, wb_data_i[31:24]};
-                        endcase
-                    end
-                    INSTR_LBU: begin
-                            case (mem_addr_i[1:0])
-                            2'b00: rf_wdata_o = {24'b0, wb_data_i[7:0]};
-                            2'b01: rf_wdata_o = {24'b0, wb_data_i[15:8]};
-                            2'b10: rf_wdata_o = {24'b0, wb_data_i[23:16]};
-                            2'b11: rf_wdata_o = {24'b0, wb_data_i[31:24]};
-                        endcase
-                    end
-                    INSTR_LH: begin
-                        case (mem_addr_i[1:0])
-                            2'b00: rf_wdata_o = {{16{wb_data_i[15]}}, wb_data_i[15:0]};
-                            2'b10: rf_wdata_o = {{16{wb_data_i[31]}}, wb_data_i[31:16]};
-                            default: rf_wdata_o = {{16{wb_data_i[15]}}, wb_data_i[15:0]};
-                        endcase
-                    end
-                    INSTR_LHU: begin
-                        case (mem_addr_i[1:0])
-                            2'b00: rf_wdata_o = {16'b0, wb_data_i[15:0]};
-                            2'b10: rf_wdata_o = {16'b0, wb_data_i[31:16]};
-                            default: rf_wdata_o = {16'b0, wb_data_i[15:0]};
-                        endcase
-                    end
-                endcase
-            end
+                        2'b00: rf_wdata_o = {24'b0, wb_data_i[7:0]};
+                        2'b01: rf_wdata_o = {24'b0, wb_data_i[15:8]};
+                        2'b10: rf_wdata_o = {24'b0, wb_data_i[23:16]};
+                        2'b11: rf_wdata_o = {24'b0, wb_data_i[31:24]};
+                    endcase
+                end
+                INSTR_LH: begin
+                    case (mem_addr_i[1:0])
+                        2'b00: rf_wdata_o = {{16{wb_data_i[15]}}, wb_data_i[15:0]};
+                        2'b10: rf_wdata_o = {{16{wb_data_i[31]}}, wb_data_i[31:16]};
+                        default: rf_wdata_o = {{16{wb_data_i[15]}}, wb_data_i[15:0]};
+                    endcase
+                end
+                INSTR_LHU: begin
+                    case (mem_addr_i[1:0])
+                        2'b00: rf_wdata_o = {16'b0, wb_data_i[15:0]};
+                        2'b10: rf_wdata_o = {16'b0, wb_data_i[31:16]};
+                        default: rf_wdata_o = {16'b0, wb_data_i[15:0]};
+                    endcase
+                end
+            endcase
         end
     end else if (instr_type_i == INSTR_TYPE_S) begin // STORE
         rf_wen_o = 1'b0;
@@ -126,13 +125,16 @@ always_ff @(posedge clk_i) begin
         wb_addr_o <= 0;
         wb_data_o <= 0;
         wb_sel_o <= 0;
+        ack_reg <= 1'b0;
+        we_reg <= 1'b0;
     end else begin
-        if (mem_en_i && (state == ST_IDLE || wb_ack_i && wb_we_o)) begin
+        ack_reg <= wb_ack_i;
+        we_reg <= wb_we_o;
+        if (mem_en_i && (state == ST_IDLE && (we_reg || !ack_reg) || state == ST_WAIT_ACK && instr_type_i == INSTR_TYPE_I && wb_ack_i && we_reg)) begin
             wb_cyc_o <= 1;
             wb_stb_o <= 1;
             wb_addr_o <= mem_addr_i;
             wb_we_o <= (instr_type_i == INSTR_TYPE_S);
-            
             // Set SEL and DATA
             if (instr_type_i == INSTR_TYPE_S) begin
                 case (instr_code_i)

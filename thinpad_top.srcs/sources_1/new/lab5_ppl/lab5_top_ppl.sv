@@ -594,8 +594,6 @@ mem_wb sys_mem_wb(
     .rf_wdata_i(mem_rf_wdata_o),
     .inst_i(mem_inst_o),
     .rf_wen_i(mem_rf_wen_o),
-    .stall_i(mem_wb_stall_i),
-    .bubble_i(mem_wb_bubble_i),
 
     .pc_o(wb_pc_i),
     .rf_waddr_o(wb_rf_waddr_i),

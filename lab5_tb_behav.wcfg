@@ -5,22 +5,22 @@
    <db_ref_list>
       <db_ref path="lab5_tb_behav.wdb" id="1">
          <top_modules>
-            <top_module name="\$unit_reg_file_sv_3184854559 " />
+            <top_module name="\$unit_reg_file_sv_1767482725 " />
             <top_module name="glbl" />
             <top_module name="lab5_tb" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="18,984.534 ns"></ZoomStartTime>
-      <ZoomEndTime time="19,257.335 ns"></ZoomEndTime>
-      <Cursor1Time time="19,030.000 ns"></Cursor1Time>
+      <ZoomStartTime time="208,931.271 ns"></ZoomStartTime>
+      <ZoomEndTime time="209,110.672 ns"></ZoomEndTime>
+      <Cursor1Time time="209,080.771 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="254"></NameColumnWidth>
-      <ValueColumnWidth column_width="103"></ValueColumnWidth>
+      <ValueColumnWidth column_width="97"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="139" />
+   <WVObjectSize size="122" />
    <wvobject fp_name="/lab5_tb/dut/sys_clk" type="logic">
       <obj_property name="ElementShortName">sys_clk</obj_property>
       <obj_property name="ObjectShortName">sys_clk</obj_property>
@@ -225,29 +225,25 @@
       <obj_property name="ElementShortName">mem_wb_bubble_i</obj_property>
       <obj_property name="ObjectShortName">mem_wb_bubble_i</obj_property>
    </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/if_wb_cyc_o" type="logic">
-      <obj_property name="ElementShortName">if_wb_cyc_o</obj_property>
-      <obj_property name="ObjectShortName">if_wb_cyc_o</obj_property>
-   </wvobject>
    <wvobject fp_name="/lab5_tb/dut/mem_wb_cyc_o" type="logic">
       <obj_property name="ElementShortName">mem_wb_cyc_o</obj_property>
       <obj_property name="ObjectShortName">mem_wb_cyc_o</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/if_wb_stb_o" type="logic">
-      <obj_property name="ElementShortName">if_wb_stb_o</obj_property>
-      <obj_property name="ObjectShortName">if_wb_stb_o</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/mem_wb_stb_o" type="logic">
       <obj_property name="ElementShortName">mem_wb_stb_o</obj_property>
       <obj_property name="ObjectShortName">mem_wb_stb_o</obj_property>
    </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/if_wb_ack_i" type="logic">
-      <obj_property name="ElementShortName">if_wb_ack_i</obj_property>
-      <obj_property name="ObjectShortName">if_wb_ack_i</obj_property>
+   <wvobject fp_name="/lab5_tb/dut/mem_wb_we_o" type="logic">
+      <obj_property name="ElementShortName">mem_wb_we_o</obj_property>
+      <obj_property name="ObjectShortName">mem_wb_we_o</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/mem_wb_ack_i" type="logic">
       <obj_property name="ElementShortName">mem_wb_ack_i</obj_property>
       <obj_property name="ObjectShortName">mem_wb_ack_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/mem_mem_en_i" type="logic">
+      <obj_property name="ElementShortName">mem_mem_en_i</obj_property>
+      <obj_property name="ObjectShortName">mem_mem_en_i</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/if_wb_adr_o" type="array">
       <obj_property name="ElementShortName">if_wb_adr_o[31:0]</obj_property>
@@ -257,37 +253,53 @@
       <obj_property name="ElementShortName">mem_wb_adr_o[31:0]</obj_property>
       <obj_property name="ObjectShortName">mem_wb_adr_o[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/if_wb_dat_o" type="array">
-      <obj_property name="ElementShortName">if_wb_dat_o[31:0]</obj_property>
-      <obj_property name="ObjectShortName">if_wb_dat_o[31:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/lab5_tb/dut/mem_wb_dat_o" type="array">
       <obj_property name="ElementShortName">mem_wb_dat_o[31:0]</obj_property>
       <obj_property name="ObjectShortName">mem_wb_dat_o[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/if_wb_dat_i" type="array">
-      <obj_property name="ElementShortName">if_wb_dat_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">if_wb_dat_i[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/mem_wb_dat_i" type="array">
       <obj_property name="ElementShortName">mem_wb_dat_i[31:0]</obj_property>
       <obj_property name="ObjectShortName">mem_wb_dat_i[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/if_wb_sel_o" type="array">
-      <obj_property name="ElementShortName">if_wb_sel_o[3:0]</obj_property>
-      <obj_property name="ObjectShortName">if_wb_sel_o[3:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/lab5_tb/dut/mem_wb_sel_o" type="array">
       <obj_property name="ElementShortName">mem_wb_sel_o[3:0]</obj_property>
       <obj_property name="ObjectShortName">mem_wb_sel_o[3:0]</obj_property>
    </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/mem_rf_waddr_o" type="array">
+      <obj_property name="ElementShortName">mem_rf_waddr_o[4:0]</obj_property>
+      <obj_property name="ObjectShortName">mem_rf_waddr_o[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/mem_rf_wdata_o" type="array">
+      <obj_property name="ElementShortName">mem_rf_wdata_o[31:0]</obj_property>
+      <obj_property name="ObjectShortName">mem_rf_wdata_o[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_MEM_master/state" type="other">
+      <obj_property name="ElementShortName">state</obj_property>
+      <obj_property name="ObjectShortName">state</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_MEM_master/instr_type_i" type="array">
+      <obj_property name="ElementShortName">instr_type_i[3:0]</obj_property>
+      <obj_property name="ObjectShortName">instr_type_i[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_MEM_master/instr_code_i" type="array">
+      <obj_property name="ElementShortName">instr_code_i[7:0]</obj_property>
+      <obj_property name="ObjectShortName">instr_code_i[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/id_rf_we_i" type="logic">
+      <obj_property name="ElementShortName">id_rf_we_i</obj_property>
+      <obj_property name="ObjectShortName">id_rf_we_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/id_rf_waddr_i" type="array">
+      <obj_property name="ElementShortName">id_rf_waddr_i[4:0]</obj_property>
+      <obj_property name="ObjectShortName">id_rf_waddr_i[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/id_rf_wdata_i" type="array">
+      <obj_property name="ElementShortName">id_rf_wdata_i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">id_rf_wdata_i[31:0]</obj_property>
+   </wvobject>
    <wvobject fp_name="/lab5_tb/dut/if_wb_we_o" type="logic">
       <obj_property name="ElementShortName">if_wb_we_o</obj_property>
       <obj_property name="ObjectShortName">if_wb_we_o</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_wb_we_o" type="logic">
-      <obj_property name="ElementShortName">mem_wb_we_o</obj_property>
-      <obj_property name="ObjectShortName">mem_wb_we_o</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/valid" type="logic">
       <obj_property name="ElementShortName">valid</obj_property>
@@ -341,21 +353,9 @@
       <obj_property name="ElementShortName">id_use_rs2_o</obj_property>
       <obj_property name="ObjectShortName">id_use_rs2_o</obj_property>
    </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/id_rf_we_i" type="logic">
-      <obj_property name="ElementShortName">id_rf_we_i</obj_property>
-      <obj_property name="ObjectShortName">id_rf_we_i</obj_property>
-   </wvobject>
    <wvobject fp_name="/lab5_tb/dut/id_rf_waddr_o" type="array">
       <obj_property name="ElementShortName">id_rf_waddr_o[4:0]</obj_property>
       <obj_property name="ObjectShortName">id_rf_waddr_o[4:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/id_rf_waddr_i" type="array">
-      <obj_property name="ElementShortName">id_rf_waddr_i[4:0]</obj_property>
-      <obj_property name="ObjectShortName">id_rf_waddr_i[4:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/id_rf_wdata_i" type="array">
-      <obj_property name="ElementShortName">id_rf_wdata_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">id_rf_wdata_i[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/id_rf_raddr_a_o" type="array">
       <obj_property name="ElementShortName">id_rf_raddr_a_o[4:0]</obj_property>
@@ -377,10 +377,6 @@
       <obj_property name="ElementShortName">exe_rf_waddr_i[4:0]</obj_property>
       <obj_property name="ObjectShortName">exe_rf_waddr_i[4:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_rf_waddr_i" type="array">
-      <obj_property name="ElementShortName">mem_rf_waddr_i[4:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_rf_waddr_i[4:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/lab5_tb/dut/wb_rf_waddr_i" type="array">
       <obj_property name="ElementShortName">wb_rf_waddr_i[4:0]</obj_property>
       <obj_property name="ObjectShortName">wb_rf_waddr_i[4:0]</obj_property>
@@ -388,10 +384,6 @@
    <wvobject fp_name="/lab5_tb/dut/exe_rf_waddr_o" type="array">
       <obj_property name="ElementShortName">exe_rf_waddr_o[4:0]</obj_property>
       <obj_property name="ObjectShortName">exe_rf_waddr_o[4:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_rf_waddr_o" type="array">
-      <obj_property name="ElementShortName">mem_rf_waddr_o[4:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_rf_waddr_o[4:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/id_instr_code_o" type="array">
       <obj_property name="ElementShortName">id_instr_code_o[7:0]</obj_property>
@@ -500,66 +492,6 @@
    <wvobject fp_name="/lab5_tb/dut/sys_EXE/jump_o" type="logic">
       <obj_property name="ElementShortName">jump_o</obj_property>
       <obj_property name="ObjectShortName">jump_o</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_pc_i" type="array">
-      <obj_property name="ElementShortName">mem_pc_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_pc_i[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_inst_i" type="array">
-      <obj_property name="ElementShortName">mem_inst_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_inst_i[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_imm_i" type="array">
-      <obj_property name="ElementShortName">mem_imm_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_imm_i[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_mem_addr_i" type="array">
-      <obj_property name="ElementShortName">mem_mem_addr_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_mem_addr_i[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_mem_data_i" type="array">
-      <obj_property name="ElementShortName">mem_mem_data_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_mem_data_i[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_rf_wen_i" type="logic">
-      <obj_property name="ElementShortName">mem_rf_wen_i</obj_property>
-      <obj_property name="ObjectShortName">mem_rf_wen_i</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_mem_en_i" type="logic">
-      <obj_property name="ElementShortName">mem_mem_en_i</obj_property>
-      <obj_property name="ObjectShortName">mem_mem_en_i</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_alu_y_i" type="array">
-      <obj_property name="ElementShortName">mem_alu_y_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_alu_y_i[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_imm_type_i" type="array">
-      <obj_property name="ElementShortName">mem_imm_type_i[3:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_imm_type_i[3:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_instr_type_i" type="array">
-      <obj_property name="ElementShortName">mem_instr_type_i[3:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_instr_type_i[3:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_instr_code_i" type="array">
-      <obj_property name="ElementShortName">mem_instr_code_i[7:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_instr_code_i[7:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_pc_o" type="array">
-      <obj_property name="ElementShortName">mem_pc_o[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_pc_o[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_inst_o" type="array">
-      <obj_property name="ElementShortName">mem_inst_o[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_inst_o[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_rf_wdata_o" type="array">
-      <obj_property name="ElementShortName">mem_rf_wdata_o[31:0]</obj_property>
-      <obj_property name="ObjectShortName">mem_rf_wdata_o[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/mem_rf_wen_o" type="logic">
-      <obj_property name="ElementShortName">mem_rf_wen_o</obj_property>
-      <obj_property name="ObjectShortName">mem_rf_wen_o</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/wb_pc_i" type="array">
       <obj_property name="ElementShortName">wb_pc_i[31:0]</obj_property>

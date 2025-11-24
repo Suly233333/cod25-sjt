@@ -165,9 +165,9 @@ always_comb begin
 
             // Prepare store data based on instr_code
             case (instr_code_i)
-                INSTR_SB: mem_data_o = {24'b0, rf_rdata_b_i[7:0]};               // SB - Store Byte
-                INSTR_SH: mem_data_o = {16'b0, rf_rdata_b_i[15:0]};             // SH - Store Half-word
-                INSTR_SW: mem_data_o = rf_rdata_b_i;                            // SW - Store Word
+                INSTR_SB: mem_data_o = {24'b0, exe_alu_b[7:0]};               // SB - Store Byte
+                INSTR_SH: mem_data_o = {16'b0, exe_alu_b[15:0]};             // SH - Store Half-word
+                INSTR_SW: mem_data_o = exe_alu_b;                            // SW - Store Word
                 default: mem_data_o = 32'b0;
             endcase
         end
