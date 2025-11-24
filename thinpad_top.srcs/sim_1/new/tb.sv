@@ -39,10 +39,10 @@ module lab5_tb;
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
   // C:\Users\user\xwechat_files\wxid_3dsbd2s4ysbp12_58d5\msg\file\2025-11\kernel-no16550.bin
-  parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\simple_uart_test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\simple_uart_test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\tb.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
-  // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\xwechat_files\\wxid_3dsbd2s4ysbp12_58d5\\msg\\file\\2025-11\\kernel-no16550.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+  parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\xwechat_files\\wxid_3dsbd2s4ysbp12_58d5\\msg\\file\\2025-11\\kernel-no16550.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
 
   initial begin
@@ -73,7 +73,7 @@ module lab5_tb;
     // PC 接收到数据后，会在仿真窗口中打印出数据
 
     // 等待一段时间，结束仿真
-    #30000 $finish;
+    #3000000 $finish;
   end
 
   // 待测试用户设计

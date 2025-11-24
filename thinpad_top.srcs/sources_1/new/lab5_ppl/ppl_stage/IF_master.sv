@@ -38,7 +38,6 @@ module IF_master #(
 typedef enum logic [1:0] {
     ST_IDLE = 0,
     ST_READ = 1
-
 } state_t;
 
 logic [31:0] pc_next, pc_branch_reg;

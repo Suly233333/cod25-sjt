@@ -122,9 +122,9 @@ always_ff @(posedge clk_i) begin
         wb_cyc_o <= 0;
         wb_stb_o <= 0;
         wb_we_o <= 0;
-        wb_addr_o <= 0;
-        wb_data_o <= 0;
-        wb_sel_o <= 0;
+        wb_addr_o <= '0;
+        wb_data_o <= '0;
+        wb_sel_o <= '0;
         ack_reg <= 1'b0;
         we_reg <= 1'b0;
     end else begin
