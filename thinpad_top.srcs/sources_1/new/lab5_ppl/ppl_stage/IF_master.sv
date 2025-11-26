@@ -81,6 +81,29 @@ btb btb_inst (
 
 state_t state;
 
+
+logic [31:0] next_pc;
+
+always_comb begin
+    // Priority: jump (from EXE) > BTB prediction > sequential
+    // 优先级: 从EXE的跳转 > BTB预测 > 顺序PC
+    if (jump_i) begin
+        // 来自 EXE 的跳转有最高优先级
+        next_pc = pc_jump_i;
+    end else if (branch_reg) begin
+        // 来自前一周期的分支
+        next_pc = pc_branch_reg;
+    end else begin
+        if (pred_jump_o) begin
+            // BTB 预测跳转
+            next_pc = btb_pred_target;
+        end else begin
+            // BTB 预测不跳转或未命中，顺序执行
+            next_pc = pc_next;
+        end
+    end
+end
+
 always_ff @ (posedge clk_i) begin
     if(rst_i)begin
         pc_next <= 32'h8000_0000;
@@ -105,26 +128,6 @@ always_ff @ (posedge clk_i) begin
         case(state)
             ST_IDLE: begin
                 if(!if_stall_i)begin
-                    logic [31:0] next_pc;
-                    
-                    // Priority: jump (from EXE) > BTB prediction > sequential
-                    // 优先级: 从EXE的跳转 > BTB预测 > 顺序PC
-                    if (jump_i) begin
-                        // 来自 EXE 的跳转有最高优先级
-                        next_pc = pc_jump_i;
-                    end else if (branch_reg) begin
-                        // 来自前一周期的分支
-                        next_pc = pc_branch_reg;
-                    end else begin
-                        if (pred_jump_o) begin
-                            // BTB 预测跳转
-                            next_pc = btb_pred_target;
-                        end else begin
-                            // BTB 预测不跳转或未命中，顺序执行
-                            next_pc = pc_next;
-                        end
-                    end
-                    
                     pc_current <= next_pc;
                     pc_next <= next_pc + 4;
                     last_fetched_pc <= next_pc;

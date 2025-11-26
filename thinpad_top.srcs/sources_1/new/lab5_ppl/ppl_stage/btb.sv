@@ -52,7 +52,7 @@ module btb #(
     logic entry_valid;
     logic [ADDR_WIDTH-1:0] entry_target;
     logic [1:0] entry_counter;
-    
+
     always_comb begin
         entry_valid = btb_table[query_index].valid;
         entry_target = btb_table[query_index].target_pc;
@@ -76,15 +76,14 @@ module btb #(
             // 刷新所有条目 (FENCE.I)
             for (int i = 0; i < BTB_SIZE; i++) begin
                 btb_table[i].valid <= 1'b0;
+                btb_table[i].target_pc <= 32'b0;
+                btb_table[i].sat_counter <= 2'b00;
             end
         end else if (update_valid_i) begin
-            // 更新 BTB 条目
-            btb_entry_t current_entry = btb_table[update_index];
-            
             // 如果是新条目或地址不同，先无效化
-            if (!current_entry.valid || current_entry.target_pc != actual_target_i) begin
-                current_entry.valid = 1'b1;
-                current_entry.target_pc = actual_target_i;
+            if (!btb_table[update_index].valid || btb_table[update_index].target_pc != actual_target_i) begin
+                btb_table[update_index].valid <= 1'b1;
+                btb_table[update_index].target_pc <= actual_target_i;
             end
             
             // 更新饱和计数器
@@ -94,19 +93,17 @@ module btb #(
             //   10 (weak_T)  -> not_taken: 01 | taken: 11
             //   11 (ST)      -> not_taken: 10 | taken: 11
             
-            case ({current_entry.sat_counter, actual_taken_i})
-                {2'b00, 1'b0}: current_entry.sat_counter = 2'b00;  // WNT, not_taken -> WNT
-                {2'b00, 1'b1}: current_entry.sat_counter = 2'b01;  // WNT, taken -> weak_NT
-                {2'b01, 1'b0}: current_entry.sat_counter = 2'b00;  // weak_NT, not_taken -> WNT
-                {2'b01, 1'b1}: current_entry.sat_counter = 2'b10;  // weak_NT, taken -> weak_T
-                {2'b10, 1'b0}: current_entry.sat_counter = 2'b01;  // weak_T, not_taken -> weak_NT
-                {2'b10, 1'b1}: current_entry.sat_counter = 2'b11;  // weak_T, taken -> ST
-                {2'b11, 1'b0}: current_entry.sat_counter = 2'b10;  // ST, not_taken -> weak_T
-                {2'b11, 1'b1}: current_entry.sat_counter = 2'b11;  // ST, taken -> ST
-                default: current_entry.sat_counter = 2'b00;
+            case ({btb_table[update_index].sat_counter, actual_taken_i})
+                {2'b00, 1'b0}: btb_table[update_index].sat_counter = 2'b00;  // WNT, not_taken -> WNT
+                {2'b00, 1'b1}: btb_table[update_index].sat_counter = 2'b01;  // WNT, taken -> weak_NT
+                {2'b01, 1'b0}: btb_table[update_index].sat_counter = 2'b00;  // weak_NT, not_taken -> WNT
+                {2'b01, 1'b1}: btb_table[update_index].sat_counter = 2'b10;  // weak_NT, taken -> weak_T
+                {2'b10, 1'b0}: btb_table[update_index].sat_counter = 2'b01;  // weak_T, not_taken -> weak_NT
+                {2'b10, 1'b1}: btb_table[update_index].sat_counter = 2'b11;  // weak_T, taken -> ST
+                {2'b11, 1'b0}: btb_table[update_index].sat_counter = 2'b10;  // ST, not_taken -> weak_T
+                {2'b11, 1'b1}: btb_table[update_index].sat_counter = 2'b11;  // ST, taken -> ST
+                default: btb_table[update_index].sat_counter = 2'b00;
             endcase
-            
-            btb_table[update_index] <= current_entry;
         end
     end
 

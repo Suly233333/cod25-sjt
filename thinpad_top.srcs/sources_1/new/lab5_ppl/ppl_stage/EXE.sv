@@ -255,6 +255,8 @@ always_comb begin
                         btb_actual_target_o = pc_i + $signed(imm_generated);
                     end else if (pred_jump_i) begin
                         exe_flush_o = 1'b1;
+                        jump_o = 1'b1;
+                        pc_jump_o = pc_i + 4;
                     end
                 end
                 INSTR_BGEU: begin

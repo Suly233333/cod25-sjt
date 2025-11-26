@@ -12,15 +12,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="208,931.271 ns"></ZoomStartTime>
-      <ZoomEndTime time="209,110.672 ns"></ZoomEndTime>
-      <Cursor1Time time="209,080.771 ns"></Cursor1Time>
+      <ZoomStartTime time="1,021,906.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="1,022,821.001 ns"></ZoomEndTime>
+      <Cursor1Time time="1,022,550.000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="254"></NameColumnWidth>
-      <ValueColumnWidth column_width="97"></ValueColumnWidth>
+      <NameColumnWidth column_width="243"></NameColumnWidth>
+      <ValueColumnWidth column_width="90"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="122" />
+   <WVObjectSize size="128" />
    <wvobject fp_name="/lab5_tb/dut/sys_clk" type="logic">
       <obj_property name="ElementShortName">sys_clk</obj_property>
       <obj_property name="ObjectShortName">sys_clk</obj_property>
@@ -84,6 +84,34 @@
    <wvobject fp_name="/lab5_tb/dut/sys_IF_master/pc_next" type="array">
       <obj_property name="ElementShortName">pc_next[31:0]</obj_property>
       <obj_property name="ObjectShortName">pc_next[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_inst/btb_table" type="array">
+      <obj_property name="ElementShortName">btb_table[63:0]</obj_property>
+      <obj_property name="ObjectShortName">btb_table[63:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_inst/pc_i" type="array">
+      <obj_property name="ElementShortName">pc_i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">pc_i[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_inst/query_index" type="array">
+      <obj_property name="ElementShortName">query_index[5:0]</obj_property>
+      <obj_property name="ObjectShortName">query_index[5:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_inst/entry_valid" type="logic">
+      <obj_property name="ElementShortName">entry_valid</obj_property>
+      <obj_property name="ObjectShortName">entry_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_inst/entry_target" type="array">
+      <obj_property name="ElementShortName">entry_target[31:0]</obj_property>
+      <obj_property name="ObjectShortName">entry_target[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_inst/entry_counter" type="array">
+      <obj_property name="ElementShortName">entry_counter[1:0]</obj_property>
+      <obj_property name="ObjectShortName">entry_counter[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab5_tb/dut/sys_IF_master/btb_inst/update_index" type="array">
+      <obj_property name="ElementShortName">update_index[5:0]</obj_property>
+      <obj_property name="ObjectShortName">update_index[5:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/sys_IF_master/pred_jump_o" type="logic">
       <obj_property name="ElementShortName">pred_jump_o</obj_property>
@@ -244,10 +272,6 @@
    <wvobject fp_name="/lab5_tb/dut/mem_mem_en_i" type="logic">
       <obj_property name="ElementShortName">mem_mem_en_i</obj_property>
       <obj_property name="ObjectShortName">mem_mem_en_i</obj_property>
-   </wvobject>
-   <wvobject fp_name="/lab5_tb/dut/if_wb_adr_o" type="array">
-      <obj_property name="ElementShortName">if_wb_adr_o[31:0]</obj_property>
-      <obj_property name="ObjectShortName">if_wb_adr_o[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/lab5_tb/dut/mem_wb_adr_o" type="array">
       <obj_property name="ElementShortName">mem_wb_adr_o[31:0]</obj_property>
