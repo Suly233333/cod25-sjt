@@ -19,10 +19,11 @@ module EXE(
     // Forwarding inputs from MEM and WB stages
     input wire mem_rf_wen_i,
     input wire [4:0] mem_rf_waddr_i,
-    input wire [31:0] mem_alu_result_i,
+    input wire [31:0] mem_rf_wdata_i,
     input wire wb_rf_wen_i,
     input wire [4:0] wb_rf_waddr_i,
-    input wire [31:0] wb_alu_result_i,
+    input wire [31:0] wb_rf_wdata_i,
+    input wire mem_stall_i,
 
     output logic [31:0] pc_o,
     output logic [31:0] inst_o,
@@ -108,18 +109,18 @@ always_comb begin
     if (exe_rs1 == 5'b0)
         exe_alu_a = '0;
     else if (mem_rf_wen_i && (exe_rs1 == mem_rf_waddr_i))
-        exe_alu_a = mem_alu_result_i;
+        exe_alu_a = mem_rf_wdata_i;
     else if (wb_rf_wen_i && (exe_rs1 == wb_rf_waddr_i))
-        exe_alu_a = wb_alu_result_i;
+        exe_alu_a = wb_rf_wdata_i;
     else
         exe_alu_a = rf_rdata_a_i;
 
     if (exe_rs2 == 5'b0)
         exe_alu_b = '0;
     else if (mem_rf_wen_i && (exe_rs2 == mem_rf_waddr_i))
-        exe_alu_b = mem_alu_result_i;
+        exe_alu_b = mem_rf_wdata_i;
     else if (wb_rf_wen_i && (exe_rs2 == wb_rf_waddr_i))
-        exe_alu_b = wb_alu_result_i;
+        exe_alu_b = wb_rf_wdata_i;
     else
         exe_alu_b = rf_rdata_b_i;
 
@@ -308,6 +309,10 @@ always_comb begin
             pc_jump_o = pc_i + $signed(imm_generated);
             jump_o = 1'b1;
             exe_flush_o = 1'b1;
+            btb_update_valid_o = 1'b1;
+            btb_update_pc_o = pc_i;
+            btb_actual_taken_o = 1'b1;
+            btb_actual_target_o = pc_jump_o;
         end
 
         default: begin
@@ -323,6 +328,11 @@ always_comb begin
             alu_b_o = 32'b0;
         end
     endcase
+    if (mem_stall_i) begin
+        jump_o = 1'b0;
+        btb_update_valid_o = 1'b0;
+        btb_actual_taken_o = 1'b0;
+    end
 end
 
 

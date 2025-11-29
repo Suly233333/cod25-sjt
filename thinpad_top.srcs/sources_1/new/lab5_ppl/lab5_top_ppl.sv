@@ -418,8 +418,7 @@ id_ex sys_id_ex(
     .instr_code_o(exe_instr_code_i),
     .use_rs2_o(exe_use_rs2_i),
     .rf_wen_o(exe_rf_wen_i),
-    .mem_en_o(exe_mem_en_i)
-    ,
+    .mem_en_o(exe_mem_en_i),
     .pred_jump_o(exe_pred_jump)
 );
 
@@ -451,6 +450,7 @@ EXE sys_EXE(
     .use_rs2_i(exe_use_rs2_i),
     .rf_wen_i(exe_rf_wen_i),
     .mem_en_i(exe_mem_en_i),
+    .mem_stall_i(mem_stall_o),
 
     .pc_o(exe_pc_o),
     .inst_o(exe_inst_o),
@@ -466,10 +466,10 @@ EXE sys_EXE(
     // Forwarding signals
     .mem_rf_wen_i(mem_rf_wen_i),
     .mem_rf_waddr_i(mem_rf_waddr_i),
-    .mem_alu_result_i(mem_alu_y_i),
+    .mem_rf_wdata_i(mem_rf_wdata_o),
     .wb_rf_wen_i(wb_rf_wen_i),
     .wb_rf_waddr_i(wb_rf_waddr_i),
-    .wb_alu_result_i(wb_rf_wdata_i),
+    .wb_rf_wdata_i(wb_rf_wdata_i),
     .exe_stall_o(exe_stall_o),
     .exe_flush_o(exe_flush_o),
     .rf_waddr_o(exe_rf_waddr_o),
@@ -599,8 +599,8 @@ mem_wb sys_mem_wb(
     .rf_waddr_o(wb_rf_waddr_i),
     .rf_wdata_o(wb_rf_wdata_i),
     .inst_o(wb_inst_i),
-    .rf_wen_o(wb_rf_wen_i)
-
+    .rf_wen_o(wb_rf_wen_i), 
+    .stall_i(mem_wb_stall_i)
 );
 
 WB sys_WB(

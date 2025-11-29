@@ -128,7 +128,10 @@ always_ff @(posedge clk_i) begin
         ack_reg <= 1'b0;
         we_reg <= 1'b0;
     end else begin
-        ack_reg <= wb_ack_i;
+        if (wb_ack_i && !wb_we_o && wb_data_i === 32'bz)
+            ack_reg <= 1'b0;
+        else
+            ack_reg <= wb_ack_i;
         we_reg <= wb_we_o;
         if (mem_en_i && (state == ST_IDLE && (we_reg || !ack_reg) || state == ST_WAIT_ACK && instr_type_i == INSTR_TYPE_I && wb_ack_i && we_reg)) begin
             wb_cyc_o <= 1;
