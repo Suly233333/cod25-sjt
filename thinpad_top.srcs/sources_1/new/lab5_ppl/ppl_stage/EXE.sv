@@ -149,6 +149,8 @@ always_comb begin
                 pc_jump_o = (exe_alu_a + $signed(imm_generated)) & 32'hFFFFFFFE;  // Clear LSB
                 jump_o = 1'b1;
                 exe_flush_o = 1'b1;
+                btb_update_valid_o = 1'b1;
+                btb_update_pc_o = pc_i;
                 btb_actual_taken_o = 1'b1;
                 btb_actual_target_o = pc_jump_o;
             end else begin
@@ -194,10 +196,6 @@ always_comb begin
                         end
                         btb_actual_taken_o = 1'b1;
                         btb_actual_target_o = pc_i + $signed(imm_generated);
-                    end else if (pred_jump_i) begin
-                        exe_flush_o = 1'b1;
-                        jump_o = 1'b1;
-                        pc_jump_o = pc_i + 4;
                     end
                 end
                 INSTR_BNE: begin
@@ -209,10 +207,6 @@ always_comb begin
                         end
                         btb_actual_taken_o = 1'b1;
                         btb_actual_target_o = pc_i + $signed(imm_generated);
-                    end else if (pred_jump_i) begin
-                        exe_flush_o = 1'b1;
-                        jump_o = 1'b1;
-                        pc_jump_o = pc_i + 4;
                     end
                 end
                 INSTR_BLT: begin
@@ -224,10 +218,6 @@ always_comb begin
                         end
                         btb_actual_taken_o = 1'b1;
                         btb_actual_target_o = pc_i + $signed(imm_generated);
-                    end else if (pred_jump_i) begin
-                        exe_flush_o = 1'b1;
-                        jump_o = 1'b1;
-                        pc_jump_o = pc_i + 4;
                     end
                 end
                 INSTR_BGE: begin
@@ -239,10 +229,6 @@ always_comb begin
                         end
                         btb_actual_taken_o = 1'b1;
                         btb_actual_target_o = pc_i + $signed(imm_generated);
-                    end else if (pred_jump_i) begin
-                        exe_flush_o = 1'b1;
-                        jump_o = 1'b1;
-                        pc_jump_o = pc_i + 4;
                     end
                 end
                 INSTR_BLTU: begin
@@ -254,10 +240,6 @@ always_comb begin
                         end
                         btb_actual_taken_o = 1'b1;
                         btb_actual_target_o = pc_i + $signed(imm_generated);
-                    end else if (pred_jump_i) begin
-                        exe_flush_o = 1'b1;
-                        jump_o = 1'b1;
-                        pc_jump_o = pc_i + 4;
                     end
                 end
                 INSTR_BGEU: begin
@@ -269,10 +251,6 @@ always_comb begin
                         end
                         btb_actual_taken_o = 1'b1;
                         btb_actual_target_o = pc_i + $signed(imm_generated);
-                    end else if (pred_jump_i) begin
-                        exe_flush_o = 1'b1;
-                        jump_o = 1'b1;
-                        pc_jump_o = pc_i + 4;
                     end
                 end
                 default: begin
@@ -328,6 +306,14 @@ always_comb begin
             alu_b_o = 32'b0;
         end
     endcase
+    if (pred_jump_i && !btb_actual_taken_o) begin
+        exe_flush_o = 1'b1;
+        jump_o = 1'b1;
+        pc_jump_o = pc_i + 4;
+        exe_flush_o = 1'b1;
+        btb_update_valid_o = 1'b1;
+        btb_update_pc_o = pc_i;
+    end
     if (mem_stall_i) begin
         jump_o = 1'b0;
         btb_update_valid_o = 1'b0;

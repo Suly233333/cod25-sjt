@@ -40,6 +40,7 @@ logic [31:0] pc_current;
 logic [31:0] cache_inst;
 logic cache_hit;
 logic wb_req_interrupted; // Flag to track if WB request was interrupted/address changed
+logic jump_reg;
 
 // BTB prediction signals
 logic [31:0] btb_pred_target;
@@ -54,7 +55,7 @@ icache icache_inst (
     .hit_o(cache_hit),
     .fill_addr_i(wb_adr_o),
     .fill_data_i(wb_dat_i),
-    .fill_valid_i(wb_ack_i && !wb_req_interrupted)
+    .fill_valid_i(wb_ack_i && !wb_req_interrupted && !jump_reg)
 );
 
 // BTB instance
@@ -112,10 +113,12 @@ always_ff @ (posedge clk_i) begin
         wb_ack_reg <= 1'b0;
         wb_addr_reg <= 32'h8000_0000;
         wb_req_interrupted <= 1'b0;
+        jump_reg <= 1'b0;
     end else begin
 
         wb_addr_reg <= wb_adr_o;
         wb_ack_reg <= wb_ack_i;
+        jump_reg <= jump_i;
         
         // Check for WB request interruption or address change during active cycle
         if (wb_cyc_o_ff && wb_stb_o_ff && !wb_ack_i && !wb_ack_reg) begin

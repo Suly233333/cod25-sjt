@@ -73,7 +73,7 @@ module btb #(
             end
         end else if (update_valid_i) begin
             // 如果是新条目或地址不同，先无效化
-            if (!btb_table[update_index].valid || btb_table[update_index].target_pc != actual_target_i) begin
+            if ((!btb_table[update_index].valid || btb_table[update_index].target_pc != actual_target_i)) begin
                 btb_table[update_index].valid <= 1'b1;
                 btb_table[update_index].target_pc <= actual_target_i;
             end

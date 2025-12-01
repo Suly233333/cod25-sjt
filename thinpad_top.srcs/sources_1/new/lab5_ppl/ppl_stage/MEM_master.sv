@@ -22,6 +22,7 @@ module MEM_master #(
     input wire stall_i,
     input wire wb_ack_i,
     input wire [31:0] alu_y_i,
+    input wire if_wb_cyc_i, // IF stage Wishbone cycle signal
 
     output logic [31:0] pc_o,
     output logic [31:0] inst_o,
@@ -39,12 +40,13 @@ module MEM_master #(
 
 );
 
-typedef enum logic {
+typedef enum logic [1:0] {
     ST_IDLE,
-    ST_WAIT_ACK
+    ST_WAIT_ACK,
+    ST_IGNORE_ACK
 } state_t;
 
-logic ack_reg, we_reg;
+logic ack_reg, we_reg, if_wb_cyc_i_reg, ignore_reg;
 state_t state;
 
 // Combinational Logic for Pipeline Outputs
@@ -65,9 +67,9 @@ always_comb begin
         
     // Memory Stall Logic
     // 这里代码如此狗屎是因为我做了个store的缓存机制，即第一个store不会立刻暂停整个流水线
-    if (wb_we_o && (mem_en_i || state == ST_WAIT_ACK)) // STORE
+    if (wb_we_o && (mem_en_i || state == ST_WAIT_ACK || state == ST_IGNORE_ACK)) // STORE
         mem_stall_o = 1'b1;
-    else if (instr_type_i == INSTR_TYPE_I && mem_en_i && !wb_we_o && (!ack_reg || we_reg)) // LOAD
+    else if (instr_type_i == INSTR_TYPE_I && mem_en_i && !wb_we_o && (!ack_reg || we_reg) || state == ST_IGNORE_ACK || ignore_reg) // LOAD
         mem_stall_o = 1'b1;
     else
         mem_stall_o = 1'b0;
@@ -127,11 +129,14 @@ always_ff @(posedge clk_i) begin
         wb_sel_o <= '0;
         ack_reg <= 1'b0;
         we_reg <= 1'b0;
+        if_wb_cyc_i_reg <= 1'b0;
     end else begin
         if (wb_ack_i && !wb_we_o && wb_data_i === 32'bz)
             ack_reg <= 1'b0;
         else
             ack_reg <= wb_ack_i;
+        if_wb_cyc_i_reg <= if_wb_cyc_i;
+        ignore_reg <= (state == ST_IGNORE_ACK);
         we_reg <= wb_we_o;
         if (mem_en_i && (state == ST_IDLE && (we_reg || !ack_reg) || state == ST_WAIT_ACK && instr_type_i == INSTR_TYPE_I && wb_ack_i && we_reg)) begin
             wb_cyc_o <= 1;
@@ -179,8 +184,21 @@ always_ff @(posedge clk_i) begin
                 endcase
                 wb_data_o <= 32'b0;
             end
+            
+            // Check if IF stage is using WB (conflict detection)
+            if (if_wb_cyc_i_reg && state == ST_IDLE) begin
+                state <= ST_IGNORE_ACK;
+            end else begin
+                state <= ST_WAIT_ACK;
+            end
+        end else if (state == ST_IGNORE_ACK && wb_ack_i) begin
+            // Ignore the first ACK (which belongs to the interrupted/conflicted transaction)
+            // and wait for the real ACK for this request
             state <= ST_WAIT_ACK;
-        end else if (wb_ack_i) begin
+            // Re-assert strobe/cycle if needed, or just keep them high
+            wb_cyc_o <= 1;
+            wb_stb_o <= 1;
+        end else if (wb_ack_i && state == ST_WAIT_ACK) begin
             wb_cyc_o <= 0;
             wb_stb_o <= 0;
             wb_we_o <= 0;

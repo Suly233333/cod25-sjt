@@ -28,7 +28,7 @@ module lab5_tb;
   wire ext_ram_we_n;  // ExtRAM 写使能，低有效
 
   wire txd;  // 直连串口发送端
-  wire rxd;  // 直连串口接收端
+  reg rxd;  // 直连串口接收端
 
   // CPLD 串口
   wire uart_rdn;  // 读串口信号，低有效
@@ -38,43 +38,137 @@ module lab5_tb;
   wire uart_tsre;  // 数据发送完毕标志
 
   // Windows 需要注意路径分隔符的转义，例如 "D:\\foo\\bar.bin"
-  // C:\Users\user\xwechat_files\wxid_3dsbd2s4ysbp12_58d5\msg\file\2025-11\kernel-no16550.bin
-  // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\simple_uart_test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
+//  parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\simple_uart_test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\tb.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   // parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\Downloads\\rv-2025\\rv-2025\\asmcode\\test.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   parameter BASE_RAM_INIT_FILE = "C:\\Users\\user\\xwechat_files\\wxid_3dsbd2s4ysbp12_58d5\\msg\\file\\2025-11\\kernel-no16550.bin"; // BaseRAM 初始化文件，请修改为实际的绝对路径
   parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";  // ExtRAM 初始化文件，请修改为实际的绝对路径
+  // =========================================================
+  // 串口发送任务
+  // =========================================================
+  localparam UART_BIT_PERIOD = 8680; // 115200 bps
 
+  // 发送 1 字节
+  task uart_send_byte(input [7:0] data);
+    integer i;
+    begin
+      rxd = 1'b0; // Start Bit
+      #(UART_BIT_PERIOD);
+      for (i = 0; i < 8; i++) begin
+        rxd = data[i]; // LSB First
+        #(UART_BIT_PERIOD);
+      end
+      rxd = 1'b1; // Stop Bit
+      #(UART_BIT_PERIOD);
+      #(UART_BIT_PERIOD); // Gap
+    end
+  endtask
+
+  // 发送 4 字节 (小端序)
+  task uart_send_word(input [31:0] word);
+    begin
+      uart_send_byte(word[7:0]);
+      uart_send_byte(word[15:8]);
+      uart_send_byte(word[23:16]);
+      uart_send_byte(word[31:24]);
+    end
+  endtask
+
+  // =========================================================
+  // 用户程序数据准备
+  // =========================================================
+
+  
+ reg [31:0] prog_instr [6]; // 5 条指令 (20 字节)
+
+ initial begin
+   // [0x80100000] li t0, 0xdeadbeef -> 需要两条指令
+   // lui t0, 0xdeadc (因为 0xeef 是负数，高位要进位)
+   prog_instr[0] = 32'h05a00513; 
+   prog_instr[1] = 32'h80100337; 
+   prog_instr[2] = 32'h10a30023; 
+   prog_instr[3] = 32'h00008067;
+   prog_instr[4] = 32'h100002b7; 
+   prog_instr[5] = 32'h00a28023; 
+ end
+
+  // =========================================================
+  // 主测试流程
+  // =========================================================
   initial begin
-    // 在这里可以自定义测试输入序列，例如：
-    dip_sw = 32'h2;
+    // 1. 初始化
     touch_btn = 0;
     reset_btn = 0;
     push_btn = 0;
+    dip_sw = 0;
+    rxd = 1'b1; // 空闲拉高
 
     #100;
     reset_btn = 1;
     #100;
     reset_btn = 0;
 
-    // TODO: 根据实验的操作要求，自定义下面的输入序列
-    for (integer i = 0; i < 20; i = i + 1) begin
-      #100;  // 等待 100ns
-      push_btn = 1;  // 按下 push_btn 按钮
-      #100;  // 等待 100ns
-      push_btn = 0;  // 松开 push_btn 按钮
-    end
+    $display("[Sim] System Reset. Waiting for Monitor to boot...");
+    // 等待 Monitor 启动 (打印 Logo)
+    repeat(150000) @(posedge clk_50M); 
 
-    // 模拟 PC 通过串口，向 FPGA 发送字符
-    uart.pc_send_byte(8'h32); // ASCII '2'
-    #1000;
-    uart.pc_send_byte(8'h33); // ASCII '3'
+    // -------------------------------------------------------------------------
+    // 步骤 1: 发送 'A' (加载程序)
+    // -------------------------------------------------------------------------
+   $display("[Sim] Sending 'A' (Load Program)...");
+   uart_send_byte("A"); // 0x41
 
-    // PC 接收到数据后，会在仿真窗口中打印出数据
+   $display("[Sim] Sending Address: 0x80100000");
+   uart_send_word(32'h80100000);
 
-    // 等待一段时间，结束仿真
-    #30000 $finish;
+   $display("[Sim] Sending Length: 20 bytes (5 instructions)");
+   uart_send_word(32'd16);
+
+   $display("[Sim] Sending Instructions...");
+   for (integer k = 0; k < 4; k = k + 1) begin
+     uart_send_word(prog_instr[k]); // 注意这里调用的是 send_word (4字节)
+   end
+
+   // 等待 CPU 写内存
+   $display("[Sim] Program loaded. Waiting...");
+
+   $display("[Sim] Sending 'D' (Load Program)...");
+   uart_send_byte("D"); // 0x41
+
+   $display("[Sim] Loading Address: 0x80100000");
+   uart_send_word(32'h80100000);
+
+   $display("[Sim] Loading Length: 20 bytes (5 instructions)");
+   uart_send_word(32'd16);
+   repeat(100000) @(posedge clk_50M);
+
+   // -------------------------------------------------------------------------
+   // 步骤 2: 发送 'G' (运行程序)
+   // -------------------------------------------------------------------------
+   $display("[Sim] Sending 'G' (Execute Program)...");
+   uart_send_byte("G"); // 0x47
+
+   $display("[Sim] Sending Jump Address: 0x80100000");
+   uart_send_word(32'h80100000);
+   repeat(100000) @(posedge clk_50M);
+   
+
+    $display("[Sim] Sending 'D' (Load Program)...");
+   uart_send_byte("D"); // 0x41
+
+   $display("[Sim] Loading Address: 0x80100100");
+   uart_send_word(32'h80100100);
+
+   $display("[Sim] Loading Length: 4 bytes");
+   uart_send_word(32'd4);
+   repeat(100000) @(posedge clk_50M);
+    
+   // 让它跑一会儿，观察寄存器变化
+
+   $display("[Sim] Test Finished.");
+    $stop;
   end
+
 
   // 待测试用户设计
   lab5_top_ppl dut (

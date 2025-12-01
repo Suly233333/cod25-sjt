@@ -564,6 +564,7 @@ MEM_master #(
     .stall_i(mem_stall_i),
     .wb_ack_i(mem_wb_ack_i),
     .alu_y_i(mem_alu_y_i),
+    .if_wb_cyc_i(if_wb_cyc_o),
 
     .pc_o(mem_pc_o),
     .inst_o(mem_inst_o),
