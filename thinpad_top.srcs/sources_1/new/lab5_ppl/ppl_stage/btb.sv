@@ -51,6 +51,7 @@ module btb #(
 
     always_comb begin
         // 预测: 计数器 >= 10 (10 或 11) 表示预测跳转
+        // pred_taken_o = 0;
         pred_taken_o = btb_table[query_index].valid && (btb_table[query_index].sat_counter[1] == 1'b1);
         pred_target_o = btb_table[query_index].target_pc;
     end
@@ -73,29 +74,31 @@ module btb #(
             end
         end else if (update_valid_i) begin
             // 如果是新条目或地址不同，先无效化
-            if ((!btb_table[update_index].valid || btb_table[update_index].target_pc != actual_target_i)) begin
+            if ((!btb_table[update_index].valid || (btb_table[update_index].target_pc != actual_target_i && actual_target_i != '0))) begin
                 btb_table[update_index].valid <= 1'b1;
                 btb_table[update_index].target_pc <= actual_target_i;
+                btb_table[update_index].sat_counter <= {1'b0, actual_taken_i};
+            end else begin
+            
+                // 更新饱和计数器
+                // 饱和计数器状态转移:
+                //   00 (WNT)     -> not_taken: 00 | taken: 01
+                //   01 (weak_NT) -> not_taken: 00 | taken: 10
+                //   10 (weak_T)  -> not_taken: 01 | taken: 11
+                //   11 (ST)      -> not_taken: 10 | taken: 11
+            
+                case ({btb_table[update_index].sat_counter, actual_taken_i})
+                    {2'b00, 1'b0}: btb_table[update_index].sat_counter <= 2'b00;  // WNT, not_taken -> WNT
+                    {2'b00, 1'b1}: btb_table[update_index].sat_counter <= 2'b01;  // WNT, taken -> weak_NT
+                    {2'b01, 1'b0}: btb_table[update_index].sat_counter <= 2'b00;  // weak_NT, not_taken -> WNT
+                    {2'b01, 1'b1}: btb_table[update_index].sat_counter <= 2'b10;  // weak_NT, taken -> weak_T
+                    {2'b10, 1'b0}: btb_table[update_index].sat_counter <= 2'b01;  // weak_T, not_taken -> weak_NT
+                    {2'b10, 1'b1}: btb_table[update_index].sat_counter <= 2'b11;  // weak_T, taken -> ST
+                    {2'b11, 1'b0}: btb_table[update_index].sat_counter <= 2'b10;  // ST, not_taken -> weak_T
+                    {2'b11, 1'b1}: btb_table[update_index].sat_counter <= 2'b11;  // ST, taken -> ST
+                    default: btb_table[update_index].sat_counter <= 2'b00;
+                endcase
             end
-            
-            // 更新饱和计数器
-            // 饱和计数器状态转移:
-            //   00 (WNT)     -> not_taken: 00 | taken: 01
-            //   01 (weak_NT) -> not_taken: 00 | taken: 10
-            //   10 (weak_T)  -> not_taken: 01 | taken: 11
-            //   11 (ST)      -> not_taken: 10 | taken: 11
-            
-            case ({btb_table[update_index].sat_counter, actual_taken_i})
-                {2'b00, 1'b0}: btb_table[update_index].sat_counter <= 2'b00;  // WNT, not_taken -> WNT
-                {2'b00, 1'b1}: btb_table[update_index].sat_counter <= 2'b01;  // WNT, taken -> weak_NT
-                {2'b01, 1'b0}: btb_table[update_index].sat_counter <= 2'b00;  // weak_NT, not_taken -> WNT
-                {2'b01, 1'b1}: btb_table[update_index].sat_counter <= 2'b10;  // weak_NT, taken -> weak_T
-                {2'b10, 1'b0}: btb_table[update_index].sat_counter <= 2'b01;  // weak_T, not_taken -> weak_NT
-                {2'b10, 1'b1}: btb_table[update_index].sat_counter <= 2'b11;  // weak_T, taken -> ST
-                {2'b11, 1'b0}: btb_table[update_index].sat_counter <= 2'b10;  // ST, not_taken -> weak_T
-                {2'b11, 1'b1}: btb_table[update_index].sat_counter <= 2'b11;  // ST, taken -> ST
-                default: btb_table[update_index].sat_counter <= 2'b00;
-            endcase
         end
     end
 

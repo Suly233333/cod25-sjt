@@ -82,7 +82,7 @@ always_comb begin
     if (jump_i) begin
         // 来自 EXE 的跳转有最高优先级
         next_pc = pc_jump_i;
-    end else if (pred_jump_o) begin
+    end else if (pred_jump_o && !if_stall_o && valid) begin
         // BTB 预测跳转
         next_pc = btb_pred_target;
     end else if (cache_hit) begin
@@ -106,7 +106,7 @@ always_ff @ (posedge clk_i) begin
         if_flush_o <= 0;
         wb_cyc_o_ff <= 0;
         wb_stb_o_ff <= 0;
-        wb_sel_o <= 4'b0000;
+        wb_sel_o <= 4'b1111;
         wb_dat_o <= 32'b0;
         wb_we_o <= 1'b0;
         valid <= 1'b0;
@@ -121,16 +121,19 @@ always_ff @ (posedge clk_i) begin
         jump_reg <= jump_i;
         
         // Check for WB request interruption or address change during active cycle
-        if (wb_cyc_o_ff && wb_stb_o_ff && !wb_ack_i && !wb_ack_reg) begin
-            if (if_stall_i || (wb_adr_o != wb_addr_reg && wb_addr_reg != 0)) begin
+        if (wb_cyc_o_ff && wb_stb_o_ff && (!wb_ack_i || jump_i) && !wb_ack_reg) begin
+            if (if_stall_i || wb_adr_o != wb_addr_reg) begin
                 wb_req_interrupted <= 1'b1;
             end
         end
 
         if(!if_stall_i) begin
             if_stall_o <= 0;
-            pc_current <= next_pc;
-            pc_next <= next_pc + 4;
+            // Only update PC if we are not stalling for cache miss
+            if (!if_stall_o && !(jump_reg && !cache_hit)) begin
+                pc_current <= next_pc;
+                pc_next <= next_pc + 4;
+            end
         end
         if(jump_i)begin
             // 来自 EXE 的确定跳转
@@ -151,8 +154,6 @@ always_ff @ (posedge clk_i) begin
                 // Data potentially corrupted due to interruption, retry
                 wb_cyc_o_ff <= 1;
                 wb_stb_o_ff <= 1;
-                wb_we_o <= 0;
-                wb_sel_o <= 4'b1111;
                 if_stall_o <= 1;
                 wb_req_interrupted <= 1'b0;
             end else begin
@@ -164,8 +165,6 @@ always_ff @ (posedge clk_i) begin
             // Cache miss and need to initiate Wishbone read
             wb_cyc_o_ff <= 1;
             wb_stb_o_ff <= 1;
-            wb_we_o <= 0;
-            wb_sel_o <= 4'b1111;
             if_stall_o <= 1;
         end
         if (!if_stall_i && valid && (!cache_hit || wb_ack_reg && wb_dat_i == cache_inst || pc_o == pc_current) || jump_i)

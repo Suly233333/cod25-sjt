@@ -150,7 +150,7 @@ module lab5_tb;
 
    $display("[Sim] Sending Jump Address: 0x80100000");
    uart_send_word(32'h80100000);
-   repeat(100000) @(posedge clk_50M);
+   repeat(20000) @(posedge clk_50M);
    
 
     $display("[Sim] Sending 'D' (Load Program)...");
